@@ -3,15 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
 #include "ui/PresetBar.h"
-
-class VocalSuiteLookAndFeel : public juce::LookAndFeel_V4
-{
-public:
-    VocalSuiteLookAndFeel();
-    void drawRotarySlider (juce::Graphics&, int x, int y, int w, int h, float pos,
-                           float startAngle, float endAngle, juce::Slider&) override;
-    void drawToggleButton (juce::Graphics&, juce::ToggleButton&, bool highlighted, bool down) override;
-};
+#include "ui/Theme.h"
 
 class VocalSuiteEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -49,7 +41,7 @@ private:
     void drawMeter (juce::Graphics&, juce::Rectangle<int>, const juce::String& name, float value, float lo, float hi, bool centred, juce::Colour);
 
     VocalSuiteProcessor& proc;
-    VocalSuiteLookAndFeel lnf;
+    vs::LookAndFeel lnf;
     std::vector<std::unique_ptr<Section>> sections;
     std::unique_ptr<vs::PresetBar> presetBar;
     juce::String lastPresetName;
