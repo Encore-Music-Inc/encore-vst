@@ -9,8 +9,10 @@ if (-not (Test-Path build)) { & $cmake -B build -G "Visual Studio 17 2022" -A x6
 & $cmake --build build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
-& "$PSScriptRoot\build\PitchTests_artefacts\Release\PitchTests.exe"
-if ($LASTEXITCODE -ne 0) { throw "DSP tests failed, not installing" }
+foreach ($t in "PitchTests", "PresetTests") {
+    & "$PSScriptRoot\build\$($t)_artefacts\Release\$t.exe"
+    if ($LASTEXITCODE -ne 0) { throw "$t failed, not installing" }
+}
 
 $src = "$PSScriptRoot\build\plugins\Vox\Vox_artefacts\Release\VST3\Sick & Sad Vox.vst3"
 $dst = "$env:CommonProgramFiles\VST3\Sick & Sad Vox.vst3"

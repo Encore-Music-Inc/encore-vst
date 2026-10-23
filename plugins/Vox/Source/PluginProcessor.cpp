@@ -461,6 +461,18 @@ void VocalSuiteProcessor::applyPreset (int index)
 
         withId->setValueNotifyingHost (withId->convertTo0to1 (value));
     }
+
+    // Hosts may call this from the audio thread; the name lives in the state
+    // tree, which is only safe to touch from the message thread.
+    if (juce::MessageManager::existsAndIsCurrentThread())
+        presetManager.setCurrent (presets[(size_t) index].name, false);
+}
+
+juce::StringArray VocalSuiteProcessor::getFactoryPresetNames()
+{
+    juce::StringArray names;
+    for (auto& p : presets) names.add (p.name);
+    return names;
 }
 
 void VocalSuiteProcessor::getStateInformation (juce::MemoryBlock& destData)
@@ -479,14 +491,7 @@ void VocalSuiteProcessor::setStateInformation (const void* data, int sizeInBytes
         {
             auto state = juce::ValueTree::fromXml (*xml);
             currentProgram = state.getProperty ("program", 0);
-            apvts.replaceState (state);
-
-            // replaceState skips params whose stored value looks unchanged, which
-            // can leave an on/off switch sitting at a half-way value. Snap them.
-            for (auto* param : getParameters())
-                if (auto* b = dynamic_cast<juce::AudioParameterBool*> (param))
-                    b->setValueNotifyingHost (state.getChildWithProperty ("id", b->paramID)
-                                                   .getProperty ("value", 1.0f).operator float() > 0.5f ? 1.0f : 0.0f);
+            vs::PresetManager::restore (apvts, state);
         }
     }
 }

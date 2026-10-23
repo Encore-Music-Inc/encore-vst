@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
+#include "ui/PresetBar.h"
 
 class VocalSuiteLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -50,7 +51,9 @@ private:
     VocalSuiteProcessor& proc;
     VocalSuiteLookAndFeel lnf;
     std::vector<std::unique_ptr<Section>> sections;
-    juce::ComboBox presetBox;
+    std::unique_ptr<vs::PresetBar> presetBar;
+    juce::String lastPresetName;
+    juce::TooltipWindow tooltips { this, 600 };
     juce::Rectangle<int> meterArea;
 
     float mIn = -100, mRide = 0, mDeess = 0, mComp = 0, mOut = -100;

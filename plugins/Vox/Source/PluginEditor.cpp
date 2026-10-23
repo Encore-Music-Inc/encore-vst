@@ -27,6 +27,17 @@ VocalSuiteLookAndFeel::VocalSuiteLookAndFeel()
     setColour (juce::PopupMenu::highlightedBackgroundColourId, colours::accent.withAlpha (0.3f));
     setColour (juce::PopupMenu::textColourId, colours::text);
     setColour (juce::PopupMenu::highlightedTextColourId, colours::text);
+    setColour (juce::TextButton::buttonColourId, colours::track);
+    setColour (juce::TextButton::textColourOffId, colours::text);
+    setColour (juce::AlertWindow::backgroundColourId, colours::panel);
+    setColour (juce::AlertWindow::textColourId, colours::text);
+    setColour (juce::AlertWindow::outlineColourId, colours::accent);
+    setColour (juce::TextEditor::backgroundColourId, colours::bg);
+    setColour (juce::TextEditor::textColourId, colours::text);
+    setColour (juce::TextEditor::outlineColourId, colours::edge);
+    setColour (juce::TextEditor::focusedOutlineColourId, colours::accent);
+    setColour (juce::TooltipWindow::backgroundColourId, colours::panel);
+    setColour (juce::TooltipWindow::textColourId, colours::text);
 }
 
 void VocalSuiteLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos,
@@ -93,11 +104,10 @@ VocalSuiteEditor::VocalSuiteEditor (VocalSuiteProcessor& p)
     addSection ("TUNE",     2, "tune_on",  { "key", "scale", "tune_speed", "tune_amount" });
     addSection ("HARMONY",  2, "harm_on",  { "h1_int", "h1_level", "h1_pan", "h2_int", "h2_level", "h2_pan", "formant", "humanize" });
 
-    for (int i = 0; i < proc.getNumPrograms(); ++i)
-        presetBox.addItem (proc.getProgramName (i), i + 1);
-    presetBox.setSelectedId (proc.getCurrentProgram() + 1, juce::dontSendNotification);
-    presetBox.onChange = [this] { proc.applyPreset (presetBox.getSelectedId() - 1); };
-    addAndMakeVisible (presetBox);
+    presetBar = std::make_unique<vs::PresetBar> (proc.presetManager, proc.getFactoryPresetNames(),
+                                                 [this] (int i) { proc.applyPreset (i); });
+    addAndMakeVisible (*presetBar);
+    lastPresetName = proc.presetManager.getCurrentName();
 
     setSize (1120, 660);
     startTimerHz (30);
@@ -159,8 +169,8 @@ void VocalSuiteEditor::resized()
     auto r = getLocalBounds().reduced (14);
     auto header = r.removeFromTop (54);
 
-    header.removeFromLeft (220); // title, drawn in paint()
-    presetBox.setBounds (header.removeFromLeft (190).withSizeKeepingCentre (190, 28));
+    header.removeFromLeft (150); // title, drawn in paint()
+    presetBar->setBounds (header.removeFromLeft (350).withSizeKeepingCentre (350, 28));
     header.removeFromLeft (20);
     meterArea = header;
 
@@ -209,7 +219,7 @@ void VocalSuiteEditor::paint (juce::Graphics& g)
 {
     g.fillAll (colours::bg);
 
-    auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (220);
+    auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (150);
     g.setColour (colours::text);
     g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
     g.drawText ("VOX", title.removeFromTop (32), juce::Justification::bottomLeft);
@@ -300,6 +310,13 @@ void VocalSuiteEditor::timerCallback()
     ballistics (mDeess, proc.deEssDb().load(), true);
     ballistics (mComp, proc.compDb().load(), true);
     mRide += 0.3f * (proc.riderDb().load() - mRide);
+
+    // the project or another instance may have changed the preset
+    if (proc.presetManager.getCurrentName() != lastPresetName)
+    {
+        lastPresetName = proc.presetManager.getCurrentName();
+        presetBar->refresh();
+    }
 
     // hold the last note briefly through gaps so the readout doesn't flicker
     const float note = proc.detectedMidi().load();

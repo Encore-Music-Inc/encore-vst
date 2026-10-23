@@ -9,6 +9,7 @@
 #include "dsp/Compressor.h"
 #include "dsp/Space.h"
 #include "dsp/PitchEngine.h"
+#include "ui/PresetManager.h"
 
 class VocalSuiteProcessor : public juce::AudioProcessor
 {
@@ -43,6 +44,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState apvts;
+    vs::PresetManager presetManager { apvts, "Vox" };
+    juce::StringArray getFactoryPresetNames();
 
     // Meter readouts for the UI (written on the audio thread)
     std::atomic<float> inputDb { -100.0f }, outputDb { -100.0f };
