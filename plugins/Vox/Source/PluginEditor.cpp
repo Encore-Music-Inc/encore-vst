@@ -65,6 +65,7 @@ void VocalSuiteEditor::addSection (const juce::String& title, int row, const cha
         {
             c.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::TextBoxBelow);
             c.slider->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 80, 18);
+            vs::styleKnob (*c.slider);
             addAndMakeVisible (*c.slider);
             c.sliderAtt = std::make_unique<APVTS::SliderAttachment> (proc.apvts, id, *c.slider);
             // double-click a knob to reset it

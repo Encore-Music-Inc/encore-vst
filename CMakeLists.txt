@@ -13,6 +13,7 @@ set(SNS_SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared)
 
 add_subdirectory(plugins/Vox)
 add_subdirectory(plugins/Verb)
+add_subdirectory(plugins/EQ)
 
 # Offline DSP tests (not installed anywhere)
 juce_add_console_app(PitchTests PRODUCT_NAME "PitchTests")
@@ -32,3 +33,9 @@ target_sources(VerbTests PRIVATE tests/VerbTests.cpp)
 target_include_directories(VerbTests PRIVATE ${SNS_SHARED_DIR})
 target_compile_definitions(VerbTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(VerbTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+juce_add_console_app(EqTests PRODUCT_NAME "EqTests")
+target_sources(EqTests PRIVATE tests/EqTests.cpp)
+target_include_directories(EqTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(EqTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(EqTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)

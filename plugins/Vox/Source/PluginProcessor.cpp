@@ -20,7 +20,7 @@ namespace
     struct Preset
     {
         const char* name;
-        std::vector<std::pair<const char*, float>> values;
+        std::vector<std::pair<const char*, double>> values; // double so integer literals convert cleanly
     };
 
     // Starting points, not finished mixes. Anything not listed falls back to
@@ -185,10 +185,10 @@ bool VocalSuiteProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 {
     const auto in = layouts.getMainInputChannelSet();
     const auto out = layouts.getMainOutputChannelSet();
-    const auto mono = juce::AudioChannelSet::mono();
+    const auto monoSet = juce::AudioChannelSet::mono();
     const auto stereo = juce::AudioChannelSet::stereo();
 
-    return (in == mono && out == mono) || (in == stereo && out == stereo) || (in == mono && out == stereo);
+    return (in == monoSet && out == monoSet) || (in == stereo && out == stereo) || (in == monoSet && out == stereo);
 }
 
 void VocalSuiteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -457,7 +457,7 @@ void VocalSuiteProcessor::applyPreset (int index)
         float value = withId->convertFrom0to1 (withId->getDefaultValue());
         for (auto& [id, v] : presets[(size_t) index].values)
             if (withId->paramID == id)
-                value = v;
+                value = (float) v;
 
         withId->setValueNotifyingHost (withId->convertTo0to1 (value));
     }

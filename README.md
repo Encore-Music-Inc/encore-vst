@@ -5,6 +5,10 @@ A collection of audio plugins (VST3, Windows) built with JUCE.
 | Plugin | What it is |
 |---|---|
 | **Vox** | All-in-one vocal chain: clean (low cut, gate, de-ess), tune, harmony, rider, tone, dynamics, space |
+| **Verb** | Algorithmic reverb: Room, Chamber, Plate, Hall, Huge (with shimmer), Spring; ducking, movement, width |
+| **EQ** | Manual 8-band parametric EQ with live spectrum, plus a Smart tab: Carve (side-chain ducking EQ) and Smart bands (dynamic cuts, with a resonance finder) |
+
+Every plugin has factory presets plus user presets (`Documents\Sick & Sad\<Plugin>\Presets\*.snspreset`).
 
 ## Layout
 
@@ -22,3 +26,5 @@ git clone --recurse-submodules https://github.com/jimmyrlondo/sick-and-sad.git
 cd sick-and-sad
 .\build-and-install.ps1   # builds, runs tests, installs VST3s (asks for admin)
 ```
+
+Or just double-click `Install Sick & Sad.cmd` (close Cubase first).

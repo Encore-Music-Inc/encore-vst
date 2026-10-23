@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "Theme.h"
 
 // Parameter-bound controls in the Sick & Sad style. Each one owns its label
 // and its attachment, so an editor only has to create and position them.
@@ -20,6 +21,7 @@ namespace vs
             label.setJustificationType (juce::Justification::centred);
             label.setFont (juce::FontOptions (12.0f));
             slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 80, 18);
+            styleKnob (slider);
             addAndMakeVisible (slider);
             addAndMakeVisible (label);
             attachment = std::make_unique<APVTS::SliderAttachment> (state, id, slider);

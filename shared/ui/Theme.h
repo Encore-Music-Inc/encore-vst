@@ -20,6 +20,17 @@ namespace vs
         inline const juce::Colour blue   { 0xff5aa7e0 };
     }
 
+    // A knob's value readout copies its colours once, when it's created,
+    // which can be before the knob is inside a themed window. Setting them on
+    // the slider itself makes the readout match no matter the order.
+    inline void styleKnob (juce::Slider& s)
+    {
+        s.setColour (juce::Slider::textBoxTextColourId, theme::text);
+        s.setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+        s.setColour (juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
+        s.setColour (juce::Slider::textBoxHighlightColourId, theme::accent.withAlpha (0.4f));
+    }
+
     class LookAndFeel : public juce::LookAndFeel_V4
     {
     public:
