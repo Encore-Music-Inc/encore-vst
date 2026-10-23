@@ -121,15 +121,18 @@ namespace vs
             cancelPendingUpdate();
         }
 
+        void setRows (int r) { rows = juce::jmax (1, r); resized(); }
+
         void resized() override
         {
-            auto r = getLocalBounds();
-            const int w = r.getWidth() / juce::jmax (1, buttons.size());
-            for (auto* b : buttons)
-                b->setBounds (r.removeFromLeft (w).reduced (2, 0));
+            const int perRow = (buttons.size() + rows - 1) / rows;
+            const int h = getHeight() / rows, w = getWidth() / juce::jmax (1, perRow);
+            for (int i = 0; i < buttons.size(); ++i)
+                buttons[i]->setBounds (juce::Rectangle<int> ((i % perRow) * w, (i / perRow) * h, w, h).reduced (2, rows > 1 ? 2 : 0));
         }
 
     private:
+        int rows = 1;
         void parameterValueChanged (int, float) override { triggerAsyncUpdate(); }
         void parameterGestureChanged (int, bool) override {}
         void handleAsyncUpdate() override { update(); }

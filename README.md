@@ -6,6 +6,7 @@ A collection of audio plugins (VST3, Windows) built with JUCE.
 |---|---|
 | **Vox** | All-in-one vocal chain: clean (low cut, gate, de-ess), tune, harmony, rider, tone, dynamics, space |
 | **Verb** | Algorithmic reverb: Room, Chamber, Plate, Hall, Huge (with shimmer), Spring; ducking, movement, width |
+| **Master** | One-click mastering: 8 styles, Listen learns the song's level and tone, true-peak limiter, LUFS targets, loudness-matched A/B |
 | **EQ** | Manual 8-band parametric EQ with live spectrum, plus a Smart tab: Carve (side-chain ducking EQ) and Smart bands (dynamic cuts, with a resonance finder) |
 
 Every plugin has factory presets plus user presets (`Documents\Sick & Sad\<Plugin>\Presets\*.snspreset`).

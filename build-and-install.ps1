@@ -9,7 +9,7 @@ if (-not (Test-Path build)) { & $cmake -B build -G "Visual Studio 17 2022" -A x6
 & $cmake --build build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
-foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests") {
+foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests") {
     Write-Host "`n== $t" -ForegroundColor Cyan
     & "$PSScriptRoot\build\$($t)_artefacts\Release\$t.exe"
     if ($LASTEXITCODE -ne 0) { throw "$t failed, not installing" }
@@ -18,7 +18,8 @@ foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests") {
 $plugins = @(
     @{ Dir = "Vox";  Target = "Vox";   Name = "Sick & Sad Vox"  },
     @{ Dir = "Verb"; Target = "Verb";  Name = "Sick & Sad Verb" },
-    @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Sick & Sad EQ"   }
+    @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Sick & Sad EQ"   },
+    @{ Dir = "Master"; Target = "Master"; Name = "Sick & Sad Master" }
 )
 $vst = "$env:CommonProgramFiles\VST3"
 $copies = foreach ($p in $plugins) {
