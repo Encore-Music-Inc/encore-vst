@@ -56,7 +56,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout MasterProcessor::createLayou
     };
 
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { "style", 1 }, "Style", styleNames(), MC::universal));
-    num ("intensity", "Intensity", { 0.0f, 1.0f }, 0.6f, pct);
+    num ("intensity", "Intensity", { 0.0f, 1.0f }, 0.5f, [] (float v) { return v > 0.495f && v < 0.505f ? juce::String ("Normal") : pct (v); });
     num ("input", "Input", { -12.0f, 12.0f, 0.1f }, 0.0f, dB);
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { "target", 1 }, "Loudness", targetNames, 0));
     num ("ceiling", "Ceiling", { -3.0f, -0.1f, 0.1f }, -1.0f, [] (float v) { return String (v, 1) + " dBTP"; });

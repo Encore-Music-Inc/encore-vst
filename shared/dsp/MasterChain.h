@@ -42,27 +42,46 @@ namespace vs
             float space;           // ambience send 0..1
             float matchStrength;   // how strongly to correct the mix's tonal balance
             float releaseMs;       // limiter release
+            float monoBassHz;      // sides below this are removed (tight, centred low end)
         };
 
-        static const StyleDef& style (int i)
+        static const StyleDef& style (int i) { return styleTable()[juce::jlimit (0, numStyles - 1, i)]; }
+
+        // For calibration tools: adjust a style at runtime (shared by all instances)
+        static void overrideStyle (int i, const float* tone5, const float* comp3, float sat, float width, float monoBassHz)
         {
-            static const StyleDef defs[numStyles] {
-                { "Universal", "Balanced tone and gentle glue for any mix",      { 0, 0, 0, 0, 0 },           { 0.40f, 0.35f, 0.30f }, false, 0.10f, 1.05f, 0.00f, 1.0f, 80 },
-                { "Fire",      "Punchy lows and forward mids for rock and punk", { 1.0f, 0.5f, 0, 1.5f, 0.5f }, { 0.55f, 0.50f, 0.40f }, true,  0.30f, 1.10f, 0.00f, 0.9f, 60 },
-                { "Clarity",   "Open, airy top end, light touch on dynamics",    { 0, -1.0f, 0, 1.0f, 2.0f }, { 0.25f, 0.20f, 0.20f }, false, 0.05f, 1.15f, 0.00f, 1.0f, 120 },
-                { "Tape",      "Warm saturation and a rounded top",              { 0.5f, 0.5f, 0, -0.5f, -1.5f }, { 0.45f, 0.40f, 0.35f }, false, 0.55f, 1.00f, 0.00f, 0.8f, 100 },
-                { "Natural",   "Barely there: light glue, keeps the dynamics",   { 0, 0, 0, 0, 0 },           { 0.20f, 0.20f, 0.15f }, false, 0.00f, 1.00f, 0.00f, 0.5f, 150 },
-                { "Spatial",   "Wide stereo and a touch of air and ambience",    { 0, -0.5f, 0, 0.5f, 1.0f }, { 0.30f, 0.30f, 0.25f }, false, 0.05f, 1.35f, 0.12f, 0.9f, 120 },
-                { "Cinematic", "Big, saturated and wide",                        { 1.5f, 0, -0.5f, 0.5f, 1.0f }, { 0.50f, 0.45f, 0.40f }, false, 0.70f, 1.25f, 0.06f, 0.9f, 100 },
-                { "Punch",     "Energetic bass and bright highs",                { 2.0f, 0, 0, 1.0f, 1.5f },  { 0.50f, 0.45f, 0.40f }, true,  0.25f, 1.10f, 0.00f, 0.9f, 60 },
-            };
-            return defs[juce::jlimit (0, numStyles - 1, i)];
+            auto& d = styleTable()[juce::jlimit (0, numStyles - 1, i)];
+            for (int b = 0; b < numTone; ++b) d.tone[b] = tone5[b];
+            for (int b = 0; b < 3; ++b) d.comp[b] = comp3[b];
+            d.sat = sat; d.width = width; d.monoBassHz = monoBassHz;
         }
 
+    private:
+        static StyleDef* styleTable()
+        {
+            // Universal, Fire, Clarity and Tape are fitted to measurements of
+            // BandLab's same-named styles at "Normal" intensity (tone per
+            // octave and dynamics, on "And it Rained", 2026-10-23). Tone values
+            // apply at full intensity, so Normal (0.5) gets half.
+            static StyleDef defs[numStyles] {
+                //  name         blurb                                              tone: low, lowmid, mid, pres, air     glue low/mid/high       fast   sat    width  space match  rel  mono Hz
+                { "Universal", "Balanced tone and solid glue for any mix",        { -2.84f, -1.01f, -1.42f, -1.16f, 3.81f },                   { 1.29f, 1.24f, 1.19f }, false, 0.10f, 1.05f, 0.00f, 1.0f, 80,  60 },
+                { "Fire",      "Huge lows, scooped mids, bite up top",            { 15.34f, -8.49f, -6.72f, 0.33f, 4.83f },                   { 2.30f, 2.30f, 2.30f }, true,  0.30f, 1.00f, 0.00f, 1.0f, 60,  120 },
+                { "Clarity",   "Open and airy: lows and highs up, mids clear",    { 1.09f, -1.65f, -6.10f, -0.51f, 5.30f },                   { 0.71f, 0.66f, 0.66f }, false, 0.05f, 1.05f, 0.00f, 1.0f, 120, 60 },
+                { "Tape",      "Smooth upper mids, sparkle on top, warm glue",    { -4.80f, -0.48f, -3.75f, -6.46f, 8.14f },                   { 0.83f, 0.78f, 0.73f }, false, 0.40f, 1.00f, 0.00f, 1.0f, 100, 60 },
+                { "Natural",   "Barely there: light glue, keeps the dynamics",    { 0, 0, 0, 0, 0 },                   { 0.20f, 0.20f, 0.15f }, false, 0.00f, 1.00f, 0.00f, 0.5f, 150, 60 },
+                { "Spatial",   "Wide stereo and a touch of air and ambience",     { 0, -0.5f, 0, 0.5f, 1.0f },         { 0.30f, 0.30f, 0.25f }, false, 0.05f, 1.35f, 0.12f, 0.9f, 120, 60 },
+                { "Cinematic", "Big, saturated and wide",                         { 1.5f, 0, -0.5f, 0.5f, 1.0f },      { 0.50f, 0.45f, 0.40f }, false, 0.70f, 1.25f, 0.06f, 0.9f, 100, 60 },
+                { "Punch",     "Energetic bass and bright highs",                 { 2.0f, 0, 0, 1.0f, 1.5f },          { 0.50f, 0.45f, 0.40f }, true,  0.25f, 1.10f, 0.00f, 0.9f, 60,  60 },
+            };
+            return defs;
+        }
+
+    public:
         struct Settings
         {
             int style = universal;
-            float intensity = 0.6f;     // 0..1
+            float intensity = 0.5f;     // 0..1, 0.5 = "Normal"
             float inputGainDb = 0.0f;
             float targetLufs = -14.0f;
             float ceilingDb = -1.0f;
@@ -200,10 +219,14 @@ namespace vs
 
             if (learning && hasSignal) analyse (l, r, n);
 
+            // 3-band glue first, so it can't squash the style's EQ moves back down
+            const float glueScale = settings.glue * 2.0f;
+            glue (l, r, n, st, k * glueScale);
+
             // tone EQ
             float toneDb[numTone];
             for (int b = 0; b < numTone; ++b)
-                toneDb[b] = juce::jlimit (-12.0f, 12.0f, (learned.toneMatch[b] * st.matchStrength + st.tone[b]) * k + settings.toneTrim[b]);
+                toneDb[b] = juce::jlimit (-18.0f, 18.0f, (learned.toneMatch[b] * st.matchStrength + st.tone[b]) * k + settings.toneTrim[b]);
             updateTone (toneDb);
             for (int c = 0; c < 2; ++c)
                 for (int i = 0; i < n; ++i)
@@ -213,10 +236,6 @@ namespace vs
                     ch[c][i] = x;
                 }
 
-            // 3-band glue
-            const float glueScale = settings.glue * 2.0f;
-            glue (l, r, n, st, k * glueScale);
-
             // saturation
             const float sat = juce::jlimit (0.0f, 1.0f, st.sat * k + settings.satTrim * 0.5f);
             saturator.setDrive (sat * 0.6f);
@@ -225,11 +244,12 @@ namespace vs
 
             // width with mono bass
             const float width = juce::jlimit (0.0f, 2.0f, 1.0f + (st.width - 1.0f) * k + settings.widthTrim);
+            if (st.monoBassHz != lastMonoHz) { lastMonoHz = st.monoBassHz; sideHp.setCutoffFrequency (st.monoBassHz); }
             for (int i = 0; i < n; ++i)
             {
                 const float m = 0.5f * (l[i] + r[i]);
                 float s = 0.5f * (l[i] - r[i]);
-                s = sideHp.processSample (0, s) * width; // nothing below 120 Hz in the sides
+                s = sideHp.processSample (0, s) * width; // centred low end
                 l[i] = m + s; r[i] = m - s;
             }
 
@@ -259,7 +279,7 @@ namespace vs
 
     private:
         static float analysisFreq (int k) { return 40.0f * std::pow (16000.0f / 40.0f, (float) k / (numAnalysis - 1)); }
-        static float toneFreq (int b) { static const float f[numTone] { 90.0f, 280.0f, 1000.0f, 3500.0f, 11000.0f }; return f[b]; }
+        static float toneFreq (int b) { static const float f[numTone] { 75.0f, 300.0f, 1500.0f, 3500.0f, 9500.0f }; return f[b]; }
 
         void updateTone (const float* db)
         {
@@ -270,9 +290,9 @@ namespace vs
             {
                 lastTone[b] += (lastTone[b] > 900.0f) ? db[b] - lastTone[b] : 0.2f * (db[b] - lastTone[b]); // glide
                 const double g = lastTone[b];
-                if (b == 0)                tone[b].c = BiquadCoefs::lowShelf (fs, toneFreq (b), 0.7, g);
-                else if (b == numTone - 1) tone[b].c = BiquadCoefs::highShelf (fs, toneFreq (b), 0.7, g);
-                else                       tone[b].c = BiquadCoefs::peak (fs, toneFreq (b), b == 2 ? 0.6 : 0.8, g);
+                static const double q[numTone] { 0.7, 0.8, 0.6, 0.9, 0.7 };
+                if (b == 0) tone[b].c = BiquadCoefs::lowShelf (fs, toneFreq (b), q[b], g);
+                else        tone[b].c = BiquadCoefs::peak (fs, toneFreq (b), q[b], g);
             }
         }
 
@@ -299,7 +319,8 @@ namespace vs
             static const float atkMs[3] { 30.0f, 15.0f, 5.0f }, relMs[3] { 200.0f, 150.0f, 80.0f };
             for (int band = 0; band < 3; ++band)
             {
-                const float a = juce::jlimit (0.0f, 1.0f, st.comp[band] * amount);
+                // up to 1.5: ratio ~5.5:1 for the heaviest styles (Fire)
+                const float a = juce::jlimit (0.0f, 1.5f, st.comp[band] * amount);
                 const float thr = learned.bandLevelDb[band] + 6.0f - a * 10.0f;
                 const float ratio = 1.0f + a * 3.0f;
                 const float speed = st.fast ? 0.5f : 1.0f;
@@ -434,8 +455,9 @@ namespace vs
                 double s = 0.0; int c = 0;
                 for (int k = 0; k < numAnalysis; ++k)
                     if (analysisFreq (k) >= lo[b] && analysisFreq (k) <= hi[b]) { s += diff[k] - mean; ++c; }
-                // correct half the gap, never more than 4 dB: a nudge, not a re-mix
-                learned.toneMatch[b] = c > 0 ? juce::jlimit (-4.0f, 4.0f, (float) (0.5 * s / c)) : 0.0f;
+                // correct a third of the gap, never more than 3 dB: a nudge on
+                // top of the style's own curve, not a re-mix
+                learned.toneMatch[b] = c > 0 ? juce::jlimit (-3.0f, 3.0f, (float) (0.35 * s / c)) : 0.0f;
             }
 
             learned.bandLevelDb[0] = bandLevelEstimate (0);
@@ -471,6 +493,7 @@ namespace vs
         float lastTone[numTone] { 999.0f, 999.0f, 999.0f, 999.0f, 999.0f };
 
         juce::dsp::LinkwitzRileyFilter<float> lp1, hp1, lp2, hp2, ap2, sideHp;
+        float lastMonoHz = -1.0f;
         std::array<std::vector<float>, 3> bands, bandsR;
         float bandEnv[3] {}, grDb[3] {};
         std::vector<float> wetL, wetR;
