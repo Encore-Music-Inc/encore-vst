@@ -1,6 +1,6 @@
 #pragma once
 
-#include <juce_dsp/juce_dsp.h>
+#include "JuceInclude.h"
 #include <array>
 #include <vector>
 #include "Util.h"

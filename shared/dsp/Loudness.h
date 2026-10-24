@@ -126,9 +126,10 @@ namespace vs
             os.initProcessing ((size_t) maxBlock);
             os.reset();
             look = std::max (4, (int) std::round (0.0015 * sampleRate));
-            detLatency = (int) std::ceil (os.getLatencyInSamples());
-            delayLen = look + detLatency;
-            window = look + 2;
+            detLatency = measureDetectorLatency (maxBlock);
+            // one sample of slack each side of the detector alignment
+            delayLen = look + detLatency + 1;
+            window = look + 4;
             for (auto& d : delay) d.assign ((size_t) delayLen, 0.0f);
             boxBuf.assign ((size_t) look, 1.0f);
             minQ.assign ((size_t) window + 4, { 0, 1.0f });
@@ -151,7 +152,38 @@ namespace vs
 
         int getLatency() const { return delayLen; }
 
-        void setCeilingDb (float db) { ceiling = std::pow (10.0f, db / 20.0f); target = ceiling * 0.985f; } // tiny margin for detector error
+    private:
+        // Send a click through the up-sampler and see where it comes out:
+        // exact for any oversampling filter, no assumptions about its delay.
+        int measureDetectorLatency (int maxBlock)
+        {
+            const int len = std::max (1, std::min (maxBlock, 64));
+            juce::AudioBuffer<float> probe (2, len);
+            int found = 0, offset = 0;
+            float best = 0.0f;
+            os.reset();
+            for (int block = 0; block < 16; ++block)
+            {
+                for (int c = 0; c < 2; ++c)
+                {
+                    float* p = probe.getWritePointer (c);
+                    for (int i = 0; i < len; ++i) p[i] = (block == 0 && i == 0) ? 1.0f : 0.0f;
+                }
+                juce::dsp::AudioBlock<float> b (probe.getArrayOfWritePointers(), 2, (size_t) len);
+                auto up = os.processSamplesUp (b);
+                for (int i = 0; i < (int) up.getNumSamples(); ++i)
+                    if (std::abs (up.getSample (0, i)) > best) { best = std::abs (up.getSample (0, i)); found = offset + i; }
+                offset += (int) up.getNumSamples();
+            }
+            os.reset();
+            return (int) std::round (found / 4.0);
+        }
+
+    public:
+
+        // 0.3 dB of margin: a 4x detector can under-read the very top octave, and
+        // the ceiling should hold even when measured more strictly than BS.1770
+        void setCeilingDb (float db) { ceiling = std::pow (10.0f, db / 20.0f); target = ceiling * 0.966f; }
         void setReleaseMs (float ms, double) { relCoef = (float) (1.0 - std::exp (-1.0 / (ms * 0.001 * fs))); }
 
         void process (juce::dsp::AudioBlock<float>& block)

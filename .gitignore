@@ -2,3 +2,6 @@ build/
 .vs/
 .vscode/
 *.user
+
+# local test files
+web/master/_*

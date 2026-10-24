@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <complex>
-#include <juce_core/juce_core.h>
+#include "JuceInclude.h"
 
 namespace vs
 {

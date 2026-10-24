@@ -1,6 +1,6 @@
 #pragma once
 
-#include <juce_dsp/juce_dsp.h>
+#include "JuceInclude.h"
 #include <array>
 #include <atomic>
 #include "Biquad.h"
@@ -140,6 +140,16 @@ namespace vs
             drive.setTargetValue (dbToGain (l.driveDb));
         }
 
+        // Use results learned elsewhere (e.g. an offline pass over the whole
+        // song) and stop any learning or re-levelling in progress.
+        void lockLearned (const Learned& l)
+        {
+            setLearned (l);
+            learning = false;
+            resettle = false;
+            rideSecondsLeft = 0.0;
+        }
+
         // Start (or restart) learning this song
         void startLearning()
         {
@@ -149,9 +159,19 @@ namespace vs
             for (auto& a : analysisAcc) a = 0.0;
             analysisSeconds = 0.0;
             preGainLocked = false;
+            toneApplied = false;
         }
 
         bool isLearning() const { return learning; }
+
+        // Offline use: end learning now with whatever has been heard
+        void finishLearningNow()
+        {
+            if (! learning) return;
+            if (preGainLocked && ! toneApplied && analysisSeconds > 1.0) applyToneAndBands();
+            learned.valid = learned.valid || preGainLocked;
+            learning = false;
+        }
         bool isSettling() const { return rideSecondsLeft > 0.0; }
         float learnProgress() const { return (float) juce::jlimit (0.0, 1.0, learnedSeconds / learnTime); }
 
@@ -331,19 +351,32 @@ namespace vs
             }
             if (! preGainLocked) return;
 
-            // tonal balance + band levels (measured post pre-gain, pre-EQ)
-            analysisSeconds += sec;
-            for (int i = 0; i < n; ++i)
+            // 3-12 s: tonal balance + band levels (measured post pre-gain, pre-EQ)
+            if (! toneApplied)
             {
-                const float m = 0.5f * (l[i] + r[i]);
-                for (int k = 0; k < numAnalysis; ++k)
+                analysisSeconds += sec;
+                for (int i = 0; i < n; ++i)
                 {
-                    const float b = analysis[k].process (0, m);
-                    analysisAcc[k] += (double) b * b;
+                    const float m = 0.5f * (l[i] + r[i]);
+                    for (int k = 0; k < numAnalysis; ++k)
+                    {
+                        const float b = analysis[k].process (0, m);
+                        analysisAcc[k] += (double) b * b;
+                    }
                 }
+                if (learnedSeconds >= toneTime)
+                {
+                    applyToneAndBands();
+                    preLimMeter.reset(); // 12-20 s: set loudness with the tone already in place
+                }
+                return;
             }
 
-            if (learnedSeconds >= learnTime) finishLearning();
+            if (learnedSeconds >= learnTime)
+            {
+                learned.valid = true;
+                learning = false;
+            }
         }
 
         // Set the drive so the output lands on the target. The level going
@@ -367,7 +400,7 @@ namespace vs
             drive.setTargetValue (dbToGain (learned.driveDb));
         }
 
-        void finishLearning()
+        void applyToneAndBands()
         {
             // Tone match: compare the song's 1/3-octave balance to a "finished
             // master" reference (flat in 1/3-octave power from 100 Hz to 2 kHz,
@@ -409,9 +442,7 @@ namespace vs
             learned.bandLevelDb[1] = bandLevelEstimate (1);
             learned.bandLevelDb[2] = bandLevelEstimate (2);
 
-            learned.valid = true;
-            learning = false;
-            resettle = true; // tone + glue thresholds just changed: re-level
+            toneApplied = true;
         }
 
         float bandLevelEstimate (int band) const
@@ -431,7 +462,8 @@ namespace vs
         Learned learned;
         bool learning = false, preGainLocked = false;
         double learnedSeconds = 0.0, analysisSeconds = 0.0;
-        static constexpr double learnTime = 20.0;
+        static constexpr double learnTime = 20.0, toneTime = 12.0;
+        bool toneApplied = false;
         int rideAcc = 0, reverbTail = 0;
 
         juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> inGain, preGain, drive;

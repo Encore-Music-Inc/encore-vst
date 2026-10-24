@@ -46,3 +46,11 @@ target_sources(MasterTests PRIVATE tests/MasterTests.cpp)
 target_include_directories(MasterTests PRIVATE ${SNS_SHARED_DIR})
 target_compile_definitions(MasterTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(MasterTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+# The browser build's configuration (no JUCE), tested natively
+add_executable(LiteMasterTests tests/LiteMasterTests.cpp)
+target_include_directories(LiteMasterTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(LiteMasterTests PRIVATE VS_NO_JUCE=1 _USE_MATH_DEFINES)
+if (MSVC)
+    target_compile_options(LiteMasterTests PRIVATE /O2 /fp:fast)
+endif()
