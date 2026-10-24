@@ -14,7 +14,7 @@ MasterEditor::MasterEditor (MasterProcessor& p)
 
     styles = std::make_unique<vs::ChoiceButtons> (proc.apvts, "style");
     targets = std::make_unique<vs::ChoiceButtons> (proc.apvts, "target");
-    styles->setRows (2);
+    styles->setRows (1);
     addAndMakeVisible (*styles);
     addAndMakeVisible (*targets);
 

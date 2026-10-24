@@ -12,23 +12,24 @@ namespace
     const juce::StringArray targetNames { "Streaming -14", "Balanced -11", "Loud -9" };
     const float targetLufs[] { -14.0f, -11.0f, -9.0f };
 
+    // Only the styles fitted to measured BandLab masters are offered for now
+    constexpr int offeredStyles = 4;
+
     juce::StringArray styleNames()
     {
         juce::StringArray s;
-        for (int i = 0; i < MC::numStyles; ++i) s.add (MC::style (i).name);
+        for (int i = 0; i < offeredStyles; ++i) s.add (MC::style (i).name);
         return s;
     }
 
     const std::vector<vs::FactoryPreset> presets
     {
         { "Default (Universal, Streaming)", {} },
-        { "Folk / Acoustic",       { { "style", MC::natural },   { "intensity", 0.5 }, { "target", 0 } } },
-        { "Punk / Loud",           { { "style", MC::fire },      { "intensity", 0.75 }, { "target", 2 } } },
-        { "Emo / Big Chorus",      { { "style", MC::punch },     { "intensity", 0.65 }, { "target", 1 }, { "width", 0.1 } } },
-        { "Lo-fi Demo",            { { "style", MC::tape },      { "intensity", 0.8 }, { "target", 0 }, { "tone_air", -1.5 } } },
-        { "Dreamy / Ambient",      { { "style", MC::spatial },   { "intensity", 0.7 }, { "target", 0 } } },
-        { "Huge",                  { { "style", MC::cinematic }, { "intensity", 0.7 }, { "target", 1 } } },
-        { "Clear Vocal Mix",       { { "style", MC::clarity },   { "intensity", 0.6 }, { "target", 0 } } },
+        { "Folk / Acoustic",       { { "style", MC::universal }, { "intensity", 0.35 }, { "target", 0 } } },
+        { "Punk / Loud",           { { "style", MC::fire },      { "intensity", 0.6 }, { "target", 2 } } },
+        { "Emo / Big Chorus",      { { "style", MC::fire },      { "intensity", 0.45 }, { "target", 1 } } },
+        { "Lo-fi Demo",            { { "style", MC::tape },      { "intensity", 0.6 }, { "target", 0 }, { "tone_air", -1.5 } } },
+        { "Clear Vocal Mix",       { { "style", MC::clarity },   { "intensity", 0.5 }, { "target", 0 } } },
     };
 }
 
