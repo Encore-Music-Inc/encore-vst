@@ -86,6 +86,9 @@ namespace vs
             float targetLufs = -14.0f;
             float ceilingDb = -1.0f;
             float toneTrim[numTone] {}; // user tweaks on top, dB
+            // Broad user EQ (dB): low shelf 160 Hz, mid bell 1.2 kHz, high shelf 5 kHz.
+            // Separate from the style's fitted tone bands, so it's easy to hear.
+            float userEq[3] {};
             float glue = 0.5f;          // 0.5 = style default, 0 = none, 1 = double
             float widthTrim = 0.0f;     // -0.5..+0.5
             float satTrim = 0.0f;       // -1..+1
@@ -131,7 +134,9 @@ namespace vs
             for (auto& e : bandEnv) e = 1e-6f;
             for (auto& g : grDb) g = 0.0f;
             for (auto& t : tone) t.reset();
+            for (auto& t : user) t.reset();
             lastTone[0] = 999.0f;
+            lastUser[0] = lastUser[1] = lastUser[2] = 999.0f;
             preGain.reset (fs, 0.3); drive.reset (fs, 0.3);
             preGain.setCurrentAndTargetValue (dbToGain (learned.preGainDb));
             drive.setCurrentAndTargetValue (dbToGain (learned.driveDb));
@@ -147,10 +152,12 @@ namespace vs
             const bool changed = s.style != settings.style || s.intensity != settings.intensity || s.glue != settings.glue
                                  || s.satTrim != settings.satTrim || s.widthTrim != settings.widthTrim || s.targetLufs != settings.targetLufs
                                  || s.inputGainDb != settings.inputGainDb
-                                 || ! std::equal (std::begin (s.toneTrim), std::end (s.toneTrim), std::begin (settings.toneTrim));
+                                 || ! std::equal (std::begin (s.toneTrim), std::end (s.toneTrim), std::begin (settings.toneTrim))
+                                 || ! std::equal (std::begin (s.userEq), std::end (s.userEq), std::begin (settings.userEq));
             settings = s;
             if (changed && learned.valid && ! learning) resettle = true;
         }
+        const Settings& getSettings() const { return settings; }
         const Learned& getLearned() const { return learned; }
         void setLearned (const Learned& l)
         {
@@ -200,7 +207,7 @@ namespace vs
         void process (float* l, float* r, int n)
         {
             const auto& st = style (settings.style);
-            const float k = settings.intensity;
+            const float k = styleAmount (settings.intensity);
             float* ch[2] { l, r };
 
             // input gain
@@ -228,11 +235,13 @@ namespace vs
             for (int b = 0; b < numTone; ++b)
                 toneDb[b] = juce::jlimit (-18.0f, 18.0f, (learned.toneMatch[b] * st.matchStrength + st.tone[b]) * k + settings.toneTrim[b]);
             updateTone (toneDb);
+            updateUserEq();
             for (int c = 0; c < 2; ++c)
                 for (int i = 0; i < n; ++i)
                 {
                     float x = ch[c][i];
                     for (auto& t : tone) x = t.process (c, x);
+                    for (auto& t : user) x = t.process (c, x);
                     ch[c][i] = x;
                 }
 
@@ -279,6 +288,29 @@ namespace vs
 
     private:
         static float analysisFreq (int k) { return 40.0f * std::pow (16000.0f / 40.0f, (float) k / (numAnalysis - 1)); }
+        // How much of the style to apply. 0..0.5 (Light..Normal) is the fitted
+        // range; above Normal it climbs faster, so Heavy is 3x Normal.
+        static float styleAmount (float intensity)
+        {
+            const float i = juce::jlimit (0.0f, 1.0f, intensity);
+            return i <= 0.5f ? i : 0.5f + (i - 0.5f) * 2.0f;
+        }
+
+        void updateUserEq()
+        {
+            bool changed = false;
+            for (int b = 0; b < 3; ++b) changed = changed || std::abs (settings.userEq[b] - lastUser[b]) > 0.01f;
+            if (! changed) return;
+            for (int b = 0; b < 3; ++b)
+            {
+                const float want = juce::jlimit (-12.0f, 12.0f, settings.userEq[b]);
+                lastUser[b] += (lastUser[b] > 900.0f) ? want - lastUser[b] : 0.2f * (want - lastUser[b]); // glide
+            }
+            user[0].c = BiquadCoefs::lowShelf (fs, 160.0, 0.7, lastUser[0]);
+            user[1].c = BiquadCoefs::peak (fs, 1200.0, 0.7, lastUser[1]);
+            user[2].c = BiquadCoefs::highShelf (fs, 5000.0, 0.7, lastUser[2]);
+        }
+
         static float toneFreq (int b) { static const float f[numTone] { 75.0f, 300.0f, 1500.0f, 3500.0f, 9500.0f }; return f[b]; }
 
         void updateTone (const float* db)
@@ -491,6 +523,8 @@ namespace vs
         juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> inGain, preGain, drive;
         Biquad tone[numTone];
         float lastTone[numTone] { 999.0f, 999.0f, 999.0f, 999.0f, 999.0f };
+        Biquad user[3];
+        float lastUser[3] { 999.0f, 999.0f, 999.0f };
 
         juce::dsp::LinkwitzRileyFilter<float> lp1, hp1, lp2, hp2, ap2, sideHp;
         float lastMonoHz = -1.0f;
