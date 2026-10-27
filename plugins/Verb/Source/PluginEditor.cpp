@@ -61,7 +61,7 @@ void VerbEditor::paint (juce::Graphics& g)
     g.drawText ("VERB", title.removeFromTop (32), juce::Justification::bottomLeft);
     g.setColour (theme::accent);
     g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("SICK & SAD", title, juce::Justification::topLeft);
+    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (display.toFloat(), 8.0f);

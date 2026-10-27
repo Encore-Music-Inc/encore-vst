@@ -1,4 +1,4 @@
-# Builds every Sick & Sad plugin (Release), runs all the DSP tests, then
+# Builds every Encore plugin (Release), runs all the DSP tests, then
 # installs the VST3s to the shared folder Cubase scans (one admin prompt).
 # Close Cubase first, or Windows won't let the old plugin files be replaced.
 $ErrorActionPreference = "Stop"
@@ -16,13 +16,16 @@ foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests
 }
 
 $plugins = @(
-    @{ Dir = "Vox";  Target = "Vox";   Name = "Sick & Sad Vox"  },
-    @{ Dir = "Verb"; Target = "Verb";  Name = "Sick & Sad Verb" },
-    @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Sick & Sad EQ"   },
-    @{ Dir = "Master"; Target = "Master"; Name = "Sick & Sad Master" }
+    @{ Dir = "Vox";  Target = "Vox";   Name = "Encore Vox";      Old = "Sick & Sad Vox"  },
+    @{ Dir = "Verb"; Target = "Verb";  Name = "Encore Verb";     Old = "Sick & Sad Verb" },
+    @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Encore Equalize"; Old = "Sick & Sad EQ"   },
+    @{ Dir = "Master"; Target = "Master"; Name = "Encore Master"; Old = "Sick & Sad Master" }
 )
 $vst = "$env:CommonProgramFiles\VST3"
+# The plugins used to be called "Sick & Sad ..." with the same IDs; remove those
+# copies so Cubase doesn't find each plugin twice (projects keep working: the IDs match).
 $copies = foreach ($p in $plugins) {
+    "if exist `"$vst\$($p.Old).vst3`" rmdir /s /q `"$vst\$($p.Old).vst3`""
     $src = "$PSScriptRoot\build\plugins\$($p.Dir)\$($p.Target)_artefacts\Release\VST3\$($p.Name).vst3"
     "robocopy `"$src`" `"$vst\$($p.Name).vst3`" /E /NFL /NDL /NJH /NJS"
 }

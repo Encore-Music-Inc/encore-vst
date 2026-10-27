@@ -4,24 +4,35 @@
 
 namespace vs
 {
-    // User presets for any Sick & Sad plugin. Each preset is a small XML file
-    //   Documents\Sick & Sad\<Plugin>\Presets\<Name>.snspreset
+    // User presets for any Encore plugin. Each preset is a small XML file
+    //   Documents\Encore\<Plugin>\Presets\<Name>.encorepreset
     // so people can back them up, email them, or drop in ones others made.
+    // Presets saved before the plugins were renamed (Documents\Sick & Sad\...,
+    // .snspreset) are copied over the first time the folder is opened.
     class PresetManager
     {
     public:
-        static constexpr const char* extension = ".snspreset";
+        static constexpr const char* extension = ".encorepreset";
+        static constexpr const char* legacyExtension = ".snspreset";
 
-        PresetManager (juce::AudioProcessorValueTreeState& state, const juce::String& pluginName)
+        PresetManager (juce::AudioProcessorValueTreeState& state, const juce::String& pluginName, const juce::String& legacyName = {})
             : apvts (state),
               folder (juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                          .getChildFile ("Sick & Sad").getChildFile (pluginName).getChildFile ("Presets"))
+                          .getChildFile ("Encore").getChildFile (pluginName).getChildFile ("Presets")),
+              legacyFolder (juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                          .getChildFile ("Sick & Sad").getChildFile (legacyName.isEmpty() ? pluginName : legacyName).getChildFile ("Presets"))
         {
         }
 
         juce::File getFolder() const
         {
-            folder.createDirectory();
+            if (! folder.isDirectory())
+            {
+                folder.createDirectory();
+                // bring presets over from before the rename (the old files stay where they were)
+                for (auto& f : legacyFolder.findChildFiles (juce::File::findFiles, false, juce::String ("*") + legacyExtension))
+                    f.copyFileTo (folder.getChildFile (f.getFileNameWithoutExtension() + extension));
+            }
             return folder;
         }
 
@@ -92,6 +103,6 @@ namespace vs
         }
 
         juce::AudioProcessorValueTreeState& apvts;
-        juce::File folder;
+        juce::File folder, legacyFolder;
     };
 }

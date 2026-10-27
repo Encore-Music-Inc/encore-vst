@@ -269,10 +269,10 @@ void EqEditor::paint (juce::Graphics& g)
     auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (150);
     g.setColour (theme::text);
     g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
-    g.drawText ("EQ", title.removeFromTop (32), juce::Justification::bottomLeft);
+    g.drawText ("EQUALIZE", title.removeFromTop (32), juce::Justification::bottomLeft);
     g.setColour (theme::accent);
     g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("SICK & SAD", title, juce::Justification::topLeft);
+    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
 
     auto panel = [&] (juce::Rectangle<int> a, const juce::String& t, bool on)
     {

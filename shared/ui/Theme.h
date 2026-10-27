@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-// The shared Sick & Sad look: dark panels, amber accent, arc knobs and pill
+// The shared Encore look: dark panels, amber accent, arc knobs and pill
 // on/off switches. Every plugin in the suite uses this so they read as one family.
 namespace vs
 {

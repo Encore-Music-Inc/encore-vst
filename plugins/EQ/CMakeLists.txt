@@ -1,10 +1,10 @@
 juce_add_plugin(SnsEQ
-    COMPANY_NAME "Sick & Sad"
-    BUNDLE_ID com.sickandsad.eq
+    COMPANY_NAME "Encore"
+    BUNDLE_ID com.encoremusic.eq
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsEq
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Sick & Sad EQ"
+    PRODUCT_NAME "Encore Equalize"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-# Sick & Sad plugin collection. Each plugin lives in plugins/<Name>; reusable
+# Encore plugin collection. Each plugin lives in plugins/<Name>; reusable
 # DSP and UI pieces live in shared/.
-project(SickAndSad VERSION 0.2.0)
+project(EncorePlugins VERSION 0.3.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

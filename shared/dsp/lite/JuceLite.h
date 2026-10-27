@@ -1,6 +1,6 @@
 #pragma once
 
-// Minimal stand-ins for the handful of JUCE utilities the Sick & Sad DSP
+// Minimal stand-ins for the handful of JUCE utilities the Encore DSP
 // core uses, so the same DSP code compiles without JUCE (e.g. to WebAssembly
 // for the browser). Written from scratch for this project; only the names
 // match, so the DSP headers don't need to change. Enabled with VS_NO_JUCE.

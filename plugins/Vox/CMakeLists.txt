@@ -1,10 +1,10 @@
 juce_add_plugin(Vox
-    COMPANY_NAME "Sick & Sad"
-    BUNDLE_ID com.sickandsad.vox
+    COMPANY_NAME "Encore"
+    BUNDLE_ID com.encoremusic.vox
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsVx
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Sick & Sad Vox"
+    PRODUCT_NAME "Encore Vox"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

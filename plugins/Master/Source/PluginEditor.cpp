@@ -112,7 +112,7 @@ void MasterEditor::paint (juce::Graphics& g)
     g.drawText ("MASTER", title.removeFromTop (32), juce::Justification::bottomLeft);
     g.setColour (theme::accent);
     g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("SICK & SAD", title, juce::Justification::topLeft);
+    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
 
     const int st = (int) proc.apvts.getRawParameterValue ("style")->load();
     g.setColour (theme::dim);

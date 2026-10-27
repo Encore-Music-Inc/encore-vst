@@ -1,10 +1,10 @@
 juce_add_plugin(Master
-    COMPANY_NAME "Sick & Sad"
-    BUNDLE_ID com.sickandsad.master
+    COMPANY_NAME "Encore"
+    BUNDLE_ID com.encoremusic.master
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsMs
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Sick & Sad Master"
+    PRODUCT_NAME "Encore Master"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
