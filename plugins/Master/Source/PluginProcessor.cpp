@@ -12,7 +12,7 @@ namespace
     const juce::StringArray targetNames { "Streaming -14", "Balanced -11", "Loud -9" };
     const float targetLufs[] { -14.0f, -11.0f, -9.0f };
 
-    // Only the styles fitted to measured BandLab masters are offered for now
+    // Only the styles fitted to measured reference masters are offered for now
     constexpr int offeredStyles = 4;
 
     juce::StringArray styleNames()
@@ -24,7 +24,7 @@ namespace
 
     const std::vector<vs::FactoryPreset> presets
     {
-        { "Default (Universal, Streaming)", {} },
+        { "Default (Balanced, Streaming)", {} },
         { "Folk / Acoustic",       { { "style", MC::universal }, { "intensity", 0.35 }, { "target", 0 } } },
         { "Punk / Loud",           { { "style", MC::fire },      { "intensity", 0.6 }, { "target", 2 } } },
         { "Emo / Big Chorus",      { { "style", MC::fire },      { "intensity", 0.45 }, { "target", 1 } } },
