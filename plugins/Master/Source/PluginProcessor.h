@@ -1,12 +1,14 @@
 #pragma once
 
+#include "EncoreProcessorBase.h"
+
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "dsp/MasterChain.h"
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
 
-class MasterProcessor : public juce::AudioProcessor
+class MasterProcessor : public EncoreProcessorBase
 {
 public:
     MasterProcessor();

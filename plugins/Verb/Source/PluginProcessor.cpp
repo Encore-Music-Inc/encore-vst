@@ -25,7 +25,7 @@ namespace
 }
 
 VerbProcessor::VerbProcessor()
-    : AudioProcessor (BusesProperties()
+    : EncoreProcessorBase (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Verb", createLayout())
@@ -168,4 +168,7 @@ void VerbProcessor::setStateInformation (const void* data, int sizeInBytes)
 }
 
 juce::AudioProcessorEditor* VerbProcessor::createEditor() { return new VerbEditor (*this); }
+#if ! BASEMENT_BUILTIN // Basement creates the processor itself
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new VerbProcessor(); }
+
+#endif

@@ -42,7 +42,7 @@ namespace
 }
 
 EqProcessor::EqProcessor()
-    : AudioProcessor (BusesProperties()
+    : EncoreProcessorBase (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                           .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false)),
@@ -273,4 +273,7 @@ void EqProcessor::setStateInformation (const void* data, int sizeInBytes)
 }
 
 juce::AudioProcessorEditor* EqProcessor::createEditor() { return new EqEditor (*this); }
+#if ! BASEMENT_BUILTIN // Basement creates the processor itself
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new EqProcessor(); }
+
+#endif

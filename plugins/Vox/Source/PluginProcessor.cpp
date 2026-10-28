@@ -84,7 +84,7 @@ namespace
 }
 
 VocalSuiteProcessor::VocalSuiteProcessor()
-    : AudioProcessor (BusesProperties()
+    : EncoreProcessorBase (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "VocalSuite", createLayout())
@@ -501,7 +501,10 @@ juce::AudioProcessorEditor* VocalSuiteProcessor::createEditor()
     return new VocalSuiteEditor (*this);
 }
 
+#if ! BASEMENT_BUILTIN // Basement creates the processor itself
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new VocalSuiteProcessor();
 }
+#endif
+

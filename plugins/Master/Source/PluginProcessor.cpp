@@ -34,7 +34,7 @@ namespace
 }
 
 MasterProcessor::MasterProcessor()
-    : AudioProcessor (BusesProperties()
+    : EncoreProcessorBase (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Master", createLayout())
@@ -236,4 +236,7 @@ void MasterProcessor::setStateInformation (const void* data, int sizeInBytes)
 }
 
 juce::AudioProcessorEditor* MasterProcessor::createEditor() { return new MasterEditor (*this); }
+#if ! BASEMENT_BUILTIN // Basement creates the processor itself
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new MasterProcessor(); }
+
+#endif

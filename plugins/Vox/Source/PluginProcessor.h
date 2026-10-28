@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EncoreProcessorBase.h"
+
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "dsp/Rider.h"
@@ -11,7 +13,7 @@
 #include "dsp/PitchEngine.h"
 #include "ui/PresetManager.h"
 
-class VocalSuiteProcessor : public juce::AudioProcessor
+class VocalSuiteProcessor : public EncoreProcessorBase
 {
 public:
     VocalSuiteProcessor();

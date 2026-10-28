@@ -1,11 +1,13 @@
 #pragma once
 
+#include "EncoreProcessorBase.h"
+
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "dsp/ReverbEngine.h"
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
 
-class VerbProcessor : public juce::AudioProcessor
+class VerbProcessor : public EncoreProcessorBase
 {
 public:
     VerbProcessor();
