@@ -21,8 +21,9 @@ struct EncoreProcessorBase : public juce::AudioPluginInstance
         d.category = "Effect";
         d.manufacturerName = "Encore";
         d.version = "1.0";
-        d.fileOrIdentifier = "encore:" + getName();
-        d.uniqueId = d.deprecatedUid = getName().hashCode();
+        // the same identifier Basement lists the plugin under ("encore:vox", "encore:equalize"...)
+        d.fileOrIdentifier = "encore:" + getName().fromFirstOccurrenceOf ("Encore ", false, false).toLowerCase();
+        d.uniqueId = d.deprecatedUid = d.fileOrIdentifier.hashCode();
         d.isInstrument = false;
         d.numInputChannels = d.numOutputChannels = 2;
     }
