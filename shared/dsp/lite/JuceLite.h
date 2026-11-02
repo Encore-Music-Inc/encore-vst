@@ -61,7 +61,9 @@ namespace juce
         T getTargetValue() const { return target; }
 
     private:
-        T current = T (0), target = T (0), step = T (0);
+        // like JUCE: a multiplicative ramp starts at 1 (from 0 it could never move, and would sit at 0 until the countdown ends)
+        static constexpr T start = std::is_same_v<Type, ValueSmoothingTypes::Multiplicative> ? T (1) : T (0);
+        T current = start, target = start, step = T (0);
         int steps = 1, countdown = 0;
     };
 
