@@ -37,6 +37,38 @@ cd sick-and-sad
 
 Or just double-click `Install Encore Plugins.cmd` (close Cubase first). It also removes the old "Sick & Sad" copies so Cubase doesn't list each plugin twice.
 
+### Building on Mac/Linux
+
+Every push is built and tested in GitHub Actions on Windows x64, macOS
+(universal, Apple Silicon + Intel, macOS 11+), Linux x64 and Linux arm64 (the
+same build as 64-bit Raspberry Pi OS). Each run's page has a zip of the plugins
+per platform. They are not signed yet, so on a Mac you'll need to clear the
+quarantine flag (`xattr -dr com.apple.quarantine <plugin>`) before a DAW loads them.
+
+Mac (Xcode command line tools, CMake and Ninja; builds VST3 + AU):
+
+```sh
+cd sick-and-sad
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+cmake --build build
+```
+
+Linux / Raspberry Pi OS (builds VST3 + LV2):
+
+```sh
+cd sick-and-sad
+sudo apt install build-essential cmake ninja-build libasound2-dev libjack-jackd2-dev \
+  libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev \
+  libxext-dev libxinerama-dev libxrandr-dev libxrender-dev
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+The plugins land in `build/plugins/<Name>/<Target>_artefacts/Release/` (`VST3/`,
+`AU/`, `LV2/`). Copy them to `~/Library/Audio/Plug-Ins/VST3` and `.../Components`
+on a Mac, or `~/.vst3` and `~/.lv2` on Linux. The tests are in
+`build/<Test>_artefacts/Release/`. The branded installer is Windows only.
+
 ## License
 
 The ENCORE. plugins, the installer and the shared code (`plugins/`, `shared/`,
