@@ -9,7 +9,7 @@ if (-not (Test-Path build)) { & $cmake -B build -G "Visual Studio 17 2022" -A x6
 & $cmake --build build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
-foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests") {
+foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests", "StrumTests") {
     Write-Host "`n== $t" -ForegroundColor Cyan
     & "$PSScriptRoot\build\$($t)_artefacts\Release\$t.exe"
     if ($LASTEXITCODE -ne 0) { throw "$t failed, not installing" }
@@ -19,7 +19,8 @@ $plugins = @(
     @{ Dir = "Vox";  Target = "Vox";   Name = "Encore Vox";      Old = "Sick & Sad Vox"  },
     @{ Dir = "Verb"; Target = "Verb";  Name = "Encore Verb";     Old = "Sick & Sad Verb" },
     @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Encore Equalize"; Old = "Sick & Sad EQ"   },
-    @{ Dir = "Master"; Target = "Master"; Name = "Encore Master"; Old = "Sick & Sad Master" }
+    @{ Dir = "Master"; Target = "Master"; Name = "Encore Master"; Old = "Sick & Sad Master" },
+    @{ Dir = "Strum"; Target = "Strum"; Name = "Encore Strum"; Old = "Sick & Sad Strum" }
 )
 $vst = "$env:CommonProgramFiles\VST3"
 # The plugins used to be called "Sick & Sad ..." with the same IDs; remove those

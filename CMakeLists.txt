@@ -15,6 +15,7 @@ add_subdirectory(plugins/Vox)
 add_subdirectory(plugins/Verb)
 add_subdirectory(plugins/EQ)
 add_subdirectory(plugins/Master)
+add_subdirectory(plugins/Strum)
 
 # Offline DSP tests (not installed anywhere)
 juce_add_console_app(PitchTests PRODUCT_NAME "PitchTests")
@@ -46,6 +47,14 @@ target_sources(MasterTests PRIVATE tests/MasterTests.cpp)
 target_include_directories(MasterTests PRIVATE ${SNS_SHARED_DIR})
 target_compile_definitions(MasterTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(MasterTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+# Strum's tests also build the plugin's processor, to check Learn, state and
+# presets end to end the way a host would drive them
+juce_add_console_app(StrumTests PRODUCT_NAME "StrumTests")
+target_sources(StrumTests PRIVATE tests/StrumTests.cpp plugins/Strum/Source/PluginProcessor.cpp plugins/Strum/Source/PluginEditor.cpp)
+target_include_directories(StrumTests PRIVATE ${SNS_SHARED_DIR} plugins/Strum/Source)
+target_compile_definitions(StrumTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 "JucePlugin_Name=\"Encore Strum\"")
+target_link_libraries(StrumTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
 
 # The browser build's configuration (no JUCE), tested natively
 add_executable(LiteMasterTests tests/LiteMasterTests.cpp)
