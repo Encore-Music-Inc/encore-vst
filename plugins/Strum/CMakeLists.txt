@@ -3,7 +3,8 @@ juce_add_plugin(Strum
     BUNDLE_ID com.encoremusic.strum
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsSt
-    FORMATS VST3 Standalone
+    FORMATS ${ENCORE_PLUGIN_FORMATS}
+    LV2URI "https://londo.tech/encore/plugins/strum"
     PRODUCT_NAME "Encore Strum"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE

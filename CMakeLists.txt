@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
+# Mac builds run on macOS 11 and newer (set before project() so it sticks)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
+
 # Encore plugin collection. Each plugin lives in plugins/<Name>; reusable
 # DSP and UI pieces live in shared/.
 project(EncorePlugins VERSION 0.4.0)
@@ -10,6 +13,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(JUCE)
 
 set(SNS_SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared)
+
+# Plugin formats per platform: VST3 + Standalone everywhere, plus AU on Mac
+# (Logic and GarageBand only load AU) and LV2 on Linux (Ardour, Carla, etc.)
+set(ENCORE_PLUGIN_FORMATS VST3 Standalone)
+if(APPLE)
+    list(APPEND ENCORE_PLUGIN_FORMATS AU)
+elseif(UNIX)
+    list(APPEND ENCORE_PLUGIN_FORMATS LV2)
+endif()
 
 # The ENCORE. typefaces (DM Sans, Space Mono; SIL OFL), built into every editor
 juce_add_binary_data(EncoreFonts
@@ -83,5 +95,7 @@ if (MSVC)
     target_compile_options(LiteMasterTests PRIVATE /O2 /fp:fast)
 endif()
 
-# The branded installer (needs a payload from installer/package.ps1)
-add_subdirectory(installer)
+# The branded installer (Windows only; needs a payload from installer/package.ps1)
+if(WIN32)
+    add_subdirectory(installer)
+endif()

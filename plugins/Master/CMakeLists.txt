@@ -3,7 +3,8 @@ juce_add_plugin(Master
     BUNDLE_ID com.encoremusic.master
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsMs
-    FORMATS VST3 Standalone
+    FORMATS ${ENCORE_PLUGIN_FORMATS}
+    LV2URI "https://londo.tech/encore/plugins/master"
     PRODUCT_NAME "Encore Master"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
