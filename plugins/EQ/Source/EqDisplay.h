@@ -13,7 +13,7 @@ public:
 
     static juce::Colour bandColour (int i)
     {
-        static const juce::uint32 c[] { 0xffe8a33d, 0xff5aa7e0, 0xff5cc98a, 0xffd36be0, 0xffe0605a, 0xff4fd1c5, 0xfff2d16b, 0xffa0a7ff };
+        static const juce::uint32 c[] { 0xffff6c40, 0xff22d3ee, 0xff7bd3a4, 0xffc084fc, 0xffef4444, 0xff2dd4bf, 0xffe8b04b, 0xff93a5ff };
         return juce::Colour (c[i % 8]);
     }
 

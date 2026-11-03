@@ -56,17 +56,12 @@ void VerbEditor::paint (juce::Graphics& g)
     g.fillAll (theme::bg);
 
     auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (150);
-    g.setColour (theme::text);
-    g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
-    g.drawText ("VERB", title.removeFromTop (32), juce::Justification::bottomLeft);
-    g.setColour (theme::accent);
-    g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
+    vs::drawTitle (g, title, "VERB");
 
     g.setColour (theme::panel);
-    g.fillRoundedRectangle (display.toFloat(), 8.0f);
+    g.fillRoundedRectangle (display.toFloat(), vs::theme::radius);
     g.setColour (theme::edge);
-    g.drawRoundedRectangle (display.toFloat().reduced (0.5f), 8.0f, 1.0f);
+    g.drawRoundedRectangle (display.toFloat().reduced (0.5f), vs::theme::radius, 1.0f);
     drawShape (g, display.toFloat().reduced (14.0f, 12.0f));
 }
 

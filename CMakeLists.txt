@@ -56,6 +56,15 @@ target_include_directories(StrumTests PRIVATE ${SNS_SHARED_DIR} plugins/Strum/So
 target_compile_definitions(StrumTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 "JucePlugin_Name=\"Encore Strum\"")
 target_link_libraries(StrumTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
 
+# Each plugin's editor drawn to a PNG (EditorShot.cpp), for checking the look
+foreach(shot Vox Verb EQ Master Strum)
+    juce_add_console_app(Shot${shot} PRODUCT_NAME "Shot${shot}")
+    target_sources(Shot${shot} PRIVATE tests/EditorShot.cpp plugins/${shot}/Source/PluginProcessor.cpp plugins/${shot}/Source/PluginEditor.cpp)
+    target_include_directories(Shot${shot} PRIVATE ${SNS_SHARED_DIR} plugins/${shot}/Source)
+    target_compile_definitions(Shot${shot} PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 "JucePlugin_Name=\"Encore ${shot}\"")
+    target_link_libraries(Shot${shot} PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+endforeach()
+
 # The browser build's configuration (no JUCE), tested natively
 add_executable(LiteMasterTests tests/LiteMasterTests.cpp)
 target_include_directories(LiteMasterTests PRIVATE ${SNS_SHARED_DIR})

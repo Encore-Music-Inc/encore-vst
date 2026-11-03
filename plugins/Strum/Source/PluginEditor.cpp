@@ -10,7 +10,7 @@ namespace
     // the restyle only has to change (or redirect) it here.
     juce::FontOptions uiFont (float size, bool bold = false)
     {
-        return juce::FontOptions (size, bold ? juce::Font::bold : juce::Font::plain);
+        return vs::font (size, bold);
     }
 }
 
@@ -243,19 +243,14 @@ void StrumEditor::paint (juce::Graphics& g)
     g.fillAll (theme::bg);
 
     auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (150);
-    g.setColour (theme::text);
-    g.setFont (uiFont (24.0f, true));
-    g.drawText ("STRUM", title.removeFromTop (32), juce::Justification::bottomLeft);
-    g.setColour (theme::accent);
-    g.setFont (uiFont (11.0f, true));
-    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
+    vs::drawTitle (g, title, "STRUM");
 
     auto panel = [&] (juce::Rectangle<int> a, const juce::String& t, bool on)
     {
         g.setColour (theme::panel);
-        g.fillRoundedRectangle (a.toFloat(), 8.0f);
+        g.fillRoundedRectangle (a.toFloat(), vs::theme::radius);
         g.setColour (theme::edge);
-        g.drawRoundedRectangle (a.toFloat().reduced (0.5f), 8.0f, 1.0f);
+        g.drawRoundedRectangle (a.toFloat().reduced (0.5f), vs::theme::radius, 1.0f);
         g.setColour (on ? theme::accent : theme::dim);
         g.setFont (uiFont (13.0f, true));
         g.drawText (t, a.reduced (12, 8).removeFromTop (24), juce::Justification::centredLeft);

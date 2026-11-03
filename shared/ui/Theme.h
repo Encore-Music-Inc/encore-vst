@@ -2,22 +2,75 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-// The shared Encore look: dark panels, amber accent, arc knobs and pill
-// on/off switches. Every plugin in the suite uses this so they read as one family.
+// The shared ENCORE. look: warm near-black panels, ember-orange accent, paper-white
+// text, arc knobs and pill on/off switches. The colours are encoremusic.studio's own
+// tokens (web/master/encore-tokens.css), so the plugins, Basement Studio and the web
+// tools read as one family. Every plugin in the suite uses this.
 namespace vs
 {
     namespace theme
     {
-        inline const juce::Colour bg     { 0xff15171c };
-        inline const juce::Colour panel  { 0xff1f232b };
-        inline const juce::Colour edge   { 0xff2c313b };
-        inline const juce::Colour text   { 0xffe6e8ec };
-        inline const juce::Colour dim    { 0xff8a919e };
-        inline const juce::Colour accent { 0xffe8a33d };
-        inline const juce::Colour track  { 0xff343a46 };
-        inline const juce::Colour green  { 0xff5cc98a };
-        inline const juce::Colour red    { 0xffe0605a };
-        inline const juce::Colour blue   { 0xff5aa7e0 };
+        inline const juce::Colour bg     { 0xff0c0a09 };   // --bg-base-default
+        inline const juce::Colour panel  { 0xff171412 };   // --bg-surface-default
+        inline const juce::Colour edge   { 0xff2b2826 };   // --divider (paper at 10% on the panel)
+        inline const juce::Colour text   { 0xfff2efe8 };   // --brand-paper
+        inline const juce::Colour soft   { 0xffbdb4a9 };   // --text-secondary
+        inline const juce::Colour dim    { 0xff91887d };   // --text-muted
+        inline const juce::Colour accent { 0xffff3b00 };   // --brand-primary
+        inline const juce::Colour accentHover { 0xffff6c40 };
+        inline const juce::Colour track  { 0xff2c2723 };   // --bg-surface-strong
+        inline const juce::Colour green  { 0xff7bd3a4 };   // --text-success-default
+        inline const juce::Colour red    { 0xffef4444 };   // --system-error
+        inline const juce::Colour blue   { 0xff22d3ee };   // --brand-accent
+        inline const juce::Colour warn   { 0xffe8b04b };   // --system-warning
+
+        // panels and cards: the site's rounded-panel, scaled to plugin size
+        inline constexpr float radius = 12.0f;
+    }
+
+    // Text: the site sets DM Sans for words and Space Mono for numbers. Every label
+    // goes through these two, so the typefaces are chosen in one place.
+    inline juce::FontOptions font (float size, bool bold = false)
+    {
+        return juce::FontOptions (size, bold ? juce::Font::bold : juce::Font::plain);
+    }
+    inline juce::FontOptions mono (float size, bool bold = false)
+    {
+        return juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), size, bold ? juce::Font::bold : juce::Font::plain);
+    }
+
+    // The top-left title every plugin shows: the ENCORE. wordmark (the period in the
+    // brand orange, as on the site) over the plugin's name.
+    inline void drawTitle (juce::Graphics& g, juce::Rectangle<int> area, const juce::String& name)
+    {
+        auto brand = area.removeFromTop (16).toFloat();
+        juce::GlyphArrangement ga;
+        const auto f = juce::Font (font (12.5f, true)).withExtraKerningFactor (0.08f);
+        ga.addLineOfText (f, "ENCORE", brand.getX(), brand.getBottom() - 3.0f);
+        g.setColour (theme::text);
+        ga.draw (g);
+        g.setColour (theme::accent);
+        g.setFont (f);
+        g.drawSingleLineText (".", (int) std::ceil (ga.getBoundingBox (0, -1, true).getRight() + 1.0f), (int) brand.getBottom() - 3);
+        g.setColour (theme::text);
+        g.setFont (font (25.0f, true));
+        g.drawText (name.toUpperCase(), area.removeFromTop (32), juce::Justification::centredLeft);
+    }
+
+    // A section's card: surface colour, a hairline edge, and its name in small caps,
+    // orange while the section is on
+    inline void drawPanel (juce::Graphics& g, juce::Rectangle<int> a, const juce::String& title = {}, bool on = true)
+    {
+        g.setColour (theme::panel);
+        g.fillRoundedRectangle (a.toFloat(), theme::radius);
+        g.setColour (theme::edge);
+        g.drawRoundedRectangle (a.toFloat().reduced (0.5f), theme::radius, 1.0f);
+        if (title.isNotEmpty())
+        {
+            g.setColour (on ? theme::accent : theme::dim);
+            g.setFont (juce::Font (font (12.0f, true)).withExtraKerningFactor (0.06f));
+            g.drawText (title, a.reduced (14, 8).removeFromTop (24), juce::Justification::centredLeft);
+        }
     }
 
     // A knob's value readout copies its colours once, when it's created,
@@ -59,7 +112,7 @@ namespace vs
             setColour (juce::TooltipWindow::backgroundColourId, theme::panel);
             setColour (juce::TooltipWindow::textColourId, theme::text);
             setColour (juce::TextButton::buttonOnColourId, theme::accent);
-            setColour (juce::TextButton::textColourOnId, theme::bg);
+            setColour (juce::TextButton::textColourOnId, juce::Colours::white);
         }
 
         void drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos,
@@ -86,7 +139,7 @@ namespace vs
             g.strokePath (value, juce::PathStrokeType (thick, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
             const float inner = radius - thick * 2.5f;
-            g.setColour (theme::panel.brighter (0.15f));
+            g.setColour (theme::track);
             g.fillEllipse (centre.x - inner, centre.y - inner, inner * 2.0f, inner * 2.0f);
 
             juce::Path pointer;
@@ -106,8 +159,8 @@ namespace vs
                 g.setColour (juce::Colours::white.withAlpha (0.08f));
                 g.fillRoundedRectangle (r, r.getHeight() * 0.5f);
             }
-            g.setColour (on ? theme::bg : theme::dim);
-            g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
+            g.setColour (on ? juce::Colours::white : theme::dim);
+            g.setFont (font (11.0f, true));
             g.drawText (on ? "ON" : "OFF", r, juce::Justification::centred);
         }
     };

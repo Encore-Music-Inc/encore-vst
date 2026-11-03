@@ -134,20 +134,15 @@ void VocalSuiteEditor::paint (juce::Graphics& g)
     g.fillAll (colours::bg);
 
     auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (150);
-    g.setColour (colours::text);
-    g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
-    g.drawText ("VOX", title.removeFromTop (32), juce::Justification::bottomLeft);
-    g.setColour (colours::accent);
-    g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
+    vs::drawTitle (g, title, "VOX");
 
     for (auto& s : sections)
     {
         const bool on = s->toggle == nullptr || s->toggle->getToggleState();
         g.setColour (colours::panel);
-        g.fillRoundedRectangle (s->area.toFloat(), 8.0f);
+        g.fillRoundedRectangle (s->area.toFloat(), vs::theme::radius);
         g.setColour (colours::edge);
-        g.drawRoundedRectangle (s->area.toFloat().reduced (0.5f), 8.0f, 1.0f);
+        g.drawRoundedRectangle (s->area.toFloat().reduced (0.5f), vs::theme::radius, 1.0f);
 
         g.setColour (on ? colours::accent : colours::dim);
         g.setFont (juce::FontOptions (13.0f, juce::Font::bold));

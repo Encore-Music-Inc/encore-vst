@@ -107,12 +107,7 @@ void MasterEditor::paint (juce::Graphics& g)
     g.fillAll (theme::bg);
 
     auto title = getLocalBounds().reduced (14).removeFromTop (54).removeFromLeft (170);
-    g.setColour (theme::text);
-    g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
-    g.drawText ("MASTER", title.removeFromTop (32), juce::Justification::bottomLeft);
-    g.setColour (theme::accent);
-    g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-    g.drawText ("ENCORE:", title, juce::Justification::topLeft);
+    vs::drawTitle (g, title, "MASTER");
 
     const int st = (int) proc.apvts.getRawParameterValue ("style")->load();
     g.setColour (theme::dim);
@@ -124,7 +119,7 @@ void MasterEditor::paint (juce::Graphics& g)
     if (advanced)
     {
         g.setColour (theme::panel);
-        g.fillRoundedRectangle (advArea.toFloat(), 8.0f);
+        g.fillRoundedRectangle (advArea.toFloat(), vs::theme::radius);
         g.setColour (theme::accent);
         g.setFont (juce::FontOptions (13.0f, juce::Font::bold));
         g.drawText ("ADVANCED   (tone trims add to what Master chose; the bars show the total)", advArea.reduced (12, 8).removeFromTop (20),
@@ -152,7 +147,7 @@ void MasterEditor::paint (juce::Graphics& g)
 void MasterEditor::drawMeters (juce::Graphics& g, juce::Rectangle<int> area)
 {
     g.setColour (theme::panel);
-    g.fillRoundedRectangle (area.toFloat(), 8.0f);
+    g.fillRoundedRectangle (area.toFloat(), vs::theme::radius);
     auto r = area.reduced (16, 12);
 
     auto big = [&] (const juce::String& label, float lufs, juce::Colour c, float h)
