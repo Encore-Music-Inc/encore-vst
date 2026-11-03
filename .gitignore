@@ -5,3 +5,4 @@ build/
 
 # local test files
 web/master/_*
+dist/

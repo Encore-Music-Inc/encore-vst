@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # Encore plugin collection. Each plugin lives in plugins/<Name>; reusable
 # DSP and UI pieces live in shared/.
-project(EncorePlugins VERSION 0.3.0)
+project(EncorePlugins VERSION 0.4.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -82,3 +82,6 @@ target_compile_definitions(LiteMasterTests PRIVATE VS_NO_JUCE=1 _USE_MATH_DEFINE
 if (MSVC)
     target_compile_options(LiteMasterTests PRIVATE /O2 /fp:fast)
 endif()
+
+# The branded installer (needs a payload from installer/package.ps1)
+add_subdirectory(installer)
