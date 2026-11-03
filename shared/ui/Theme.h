@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "EncoreFonts.h"
 
 // The shared ENCORE. look: warm near-black panels, ember-orange accent, paper-white
 // text, arc knobs and pill on/off switches. The colours are encoremusic.studio's own
@@ -51,7 +52,7 @@ namespace vs
         ga.draw (g);
         g.setColour (theme::accent);
         g.setFont (f);
-        g.drawSingleLineText (".", (int) std::ceil (ga.getBoundingBox (0, -1, true).getRight() + 1.0f), (int) brand.getBottom() - 3);
+        g.drawSingleLineText (".", (int) std::ceil (ga.getBoundingBox (0, -1, true).getRight() - 0.5f), (int) brand.getBottom() - 3);
         g.setColour (theme::text);
         g.setFont (font (25.0f, true));
         g.drawText (name.toUpperCase(), area.removeFromTop (32), juce::Justification::centredLeft);
@@ -84,8 +85,50 @@ namespace vs
         s.setColour (juce::Slider::textBoxHighlightColourId, theme::accent.withAlpha (0.4f));
     }
 
+    // The site's two typefaces, built into the plugin (shared/ui/fonts, SIL OFL). JUCE
+    // looks every font up through the app's *default* LookAndFeel, not the one a
+    // component uses, so while any ENCORE. editor is open this one is the default:
+    // then every label, readout and menu (ours and JUCE's own) draws in DM Sans, and
+    // anything asking for the monospaced font gets Space Mono. Editors share one
+    // instance (SharedResourcePointer), so closing one of two open editors keeps it.
+    class Typefaces : public juce::LookAndFeel_V4
+    {
+    public:
+        Typefaces()
+        {
+            juce::LookAndFeel::setDefaultLookAndFeel (this);
+            juce::Typeface::clearTypefaceCache();
+        }
+        ~Typefaces() override
+        {
+            if (&juce::LookAndFeel::getDefaultLookAndFeel() == this)
+                juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
+            juce::Typeface::clearTypefaceCache();
+        }
+
+        juce::Typeface::Ptr getTypefaceForFont (const juce::Font& f) override
+        {
+            const auto name = f.getTypefaceName();
+            if (name == juce::Font::getDefaultSansSerifFontName())  return f.isBold() ? sansBold : sans;
+            if (name == juce::Font::getDefaultMonospacedFontName()) return f.isBold() ? monoBold : mono;
+            return juce::LookAndFeel_V4::getTypefaceForFont (f);
+        }
+
+    private:
+        static juce::Typeface::Ptr load (const char* data, int size)
+        {
+            return juce::Typeface::createSystemTypefaceFor (data, (size_t) size);
+        }
+        const juce::Typeface::Ptr sans     = load (EncoreFonts::DMSansRegular_ttf,    EncoreFonts::DMSansRegular_ttfSize),
+                                  sansBold = load (EncoreFonts::DMSansBold_ttf,       EncoreFonts::DMSansBold_ttfSize),
+                                  mono     = load (EncoreFonts::SpaceMonoRegular_ttf, EncoreFonts::SpaceMonoRegular_ttfSize),
+                                  monoBold = load (EncoreFonts::SpaceMonoBold_ttf,    EncoreFonts::SpaceMonoBold_ttfSize);
+    };
+
     class LookAndFeel : public juce::LookAndFeel_V4
     {
+        juce::SharedResourcePointer<Typefaces> typefaces;   // first, so the fonts are in place before anything draws
+
     public:
         LookAndFeel()
         {
