@@ -36,3 +36,19 @@ cd sick-and-sad
 ```
 
 Or just double-click `Install Encore Plugins.cmd` (close Cubase first). It also removes the old "Sick & Sad" copies so Cubase doesn't list each plugin twice.
+
+## License
+
+The ENCORE. plugins, the installer and the shared code (`plugins/`, `shared/`,
+`installer/`, `tests/` and the build scripts) are free software under the GNU
+Affero General Public License v3 (see `LICENSE`). They use JUCE under the
+AGPLv3 and the VST3 SDK under the GPLv3. The same plugins are built into
+ENCORE. Basement Studio (github.com/jimmyrlondo/encore-studio), under the
+same license.
+
+The ENCORE. Green Room web tools in `web/` are **not** covered by that license:
+see `web/LICENSE.md`. Bundled third-party pieces keep their own licenses (font,
+sound, word-list and library license files sit next to them).
+
+Copyright (C) 2026 Encore Studio. The ENCORE. name and logo are not licensed:
+see `TRADEMARKS.md`.

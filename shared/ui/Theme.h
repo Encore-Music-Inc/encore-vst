@@ -1,7 +1,16 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
-#include "EncoreFonts.h"
+
+// A plugin build owns its process's default look, so it brings the ENCORE.
+// typefaces. An app that builds the plugins in (ENCORE. Basement Studio) sets
+// this to 0: there the app's own default look and fonts stay in charge.
+#ifndef ENCORE_PLUGIN_OWNS_DEFAULT_LOOK
+ #define ENCORE_PLUGIN_OWNS_DEFAULT_LOOK 1
+#endif
+#if ENCORE_PLUGIN_OWNS_DEFAULT_LOOK
+ #include "EncoreFonts.h"
+#endif
 
 // The shared ENCORE. look: warm near-black panels, ember-orange accent, paper-white
 // text, arc knobs and pill on/off switches. The colours are encoremusic.studio's own
@@ -91,6 +100,7 @@ namespace vs
     // then every label, readout and menu (ours and JUCE's own) draws in DM Sans, and
     // anything asking for the monospaced font gets Space Mono. Editors share one
     // instance (SharedResourcePointer), so closing one of two open editors keeps it.
+   #if ENCORE_PLUGIN_OWNS_DEFAULT_LOOK
     class Typefaces : public juce::LookAndFeel_V4
     {
     public:
@@ -124,10 +134,13 @@ namespace vs
                                   mono     = load (EncoreFonts::SpaceMonoRegular_ttf, EncoreFonts::SpaceMonoRegular_ttfSize),
                                   monoBold = load (EncoreFonts::SpaceMonoBold_ttf,    EncoreFonts::SpaceMonoBold_ttfSize);
     };
+   #endif
 
     class LookAndFeel : public juce::LookAndFeel_V4
     {
+       #if ENCORE_PLUGIN_OWNS_DEFAULT_LOOK
         juce::SharedResourcePointer<Typefaces> typefaces;   // first, so the fonts are in place before anything draws
+       #endif
 
     public:
         LookAndFeel()
