@@ -2,7 +2,7 @@
 
 Encore's audio plugins (VST3, Windows) built with JUCE: Encore: Vox, Encore: Verb,
 Encore: Equalize, Encore: Master and Encore: Strum. The same DSP runs in the browser as Encore
-Studio's mastering engine (`web/master`). Windows file names can't contain a
+Studio's mastering engine (`web/master` in jimmyrlondo/encore-studio). Windows file names can't contain a
 colon, so the files and host lists say "Encore Vox" etc.
 
 (These were called "Sick & Sad" before. Plugin IDs didn't change, so old
@@ -71,16 +71,9 @@ on a Mac, or `~/.vst3` and `~/.lv2` on Linux. The tests are in
 
 ## License
 
-The ENCORE. plugins, the installer and the shared code (`plugins/`, `shared/`,
-`installer/`, `tests/` and the build scripts) are free software under the GNU
-Affero General Public License v3 (see `LICENSE`). They use JUCE under the
-AGPLv3 and the VST3 SDK under the GPLv3. The same plugins are built into
-ENCORE. Basement Studio (github.com/jimmyrlondo/encore-studio), under the
-same license.
+Copyright (C) 2026 Encore Studio. All rights reserved. The ENCORE. plugins are
+proprietary; see `LICENSE`. The ENCORE. name and logo: see `TRADEMARKS.md`.
 
-The ENCORE. Green Room web tools in `web/` are **not** covered by that license:
-see `web/LICENSE.md`. Bundled third-party pieces keep their own licenses (font,
-sound, word-list and library license files sit next to them).
-
-Copyright (C) 2026 Encore Studio. The ENCORE. name and logo are not licensed:
-see `TRADEMARKS.md`.
+ENCORE. Green Room (the web tools that used to be in `web/`) moved to
+jimmyrlondo/encore-studio on 2026-11-04, with its history. Its rules for the team
+(contributor agreement, no copyleft code, licence tiers) are in that repo's `CLAUDE.md`.

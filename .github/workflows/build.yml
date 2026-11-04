@@ -4,11 +4,11 @@
 # bundles are uploaded as one zip per platform. Nothing is signed yet.
 name: Build
 
+# Private repo: Actions minutes are limited (Mac minutes count 10x), so builds run only
+# for a release tag or by hand (gh workflow run build.yml --ref <branch>).
 on:
   push:
-    branches: ["**"]
     tags: ["v*"]
-  pull_request:
   workflow_dispatch:
 
 concurrency:
