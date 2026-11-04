@@ -12,7 +12,7 @@ int main (int argc, char** argv)
     std::unique_ptr<juce::AudioProcessor> p (createPluginFilter());
     p->setPlayConfigDetails (2, 2, 48000.0, 512);
     p->prepareToPlay (48000.0, 512);
-    std::unique_ptr<juce::AudioProcessorEditor> ed (p->createEditor());
+    std::unique_ptr<juce::AudioProcessorEditor> ed (p->createEditorIfNeeded());   // createEditor() is private from JUCE 9
     const auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
     const juce::File f (juce::File::getCurrentWorkingDirectory().getChildFile (juce::String (argv[1])));
     f.deleteFile();
