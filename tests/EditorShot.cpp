@@ -1,5 +1,8 @@
 // EditorShot <file.png>: draws one plugin's editor offscreen to a PNG, to check the
-// look without a host or an audio device. Built once per plugin (Shot<Name>).
+// look without a host or an audio device. Built once per plugin (Shot<Name>), linked
+// to that plugin's own library. ctest runs each one, writing build/shots/<Name>.png
+// (on Linux it needs a display: xvfb-run). installer/package.ps1 uses them for the
+// installer's plugin cards.
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <cstdio>
 
