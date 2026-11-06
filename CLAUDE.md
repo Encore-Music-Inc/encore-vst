@@ -60,17 +60,34 @@ encore-studio do not apply here; this file does.
 
 ## Versioning and releases
 
-- The version is `project(EncorePlugins VERSION ...)` in `CMakeLists.txt`. CI
-  fails a tag that doesn't match it.
-- Releases are created by a person, never by a Claude session. In GitHub: Releases,
-  Draft a new release, choose a new tag `vX.Y.Z` on `main`, Publish. That tag starts
-  CI, which doesn't rebuild: it attaches the files from the successful main build
-  of that commit (with `.sha256` files) to the Release.
+- Semantic versioning, tags `vMAJOR.MINOR.PATCH`. MAJOR for anything that breaks
+  people's saved work (a changed plugin ID or parameter, or presets that no longer
+  load); MINOR for new features; PATCH for fixes.
+- Keep the existing v0.4.0 tag and release as they are.
+
+## Release process
+
+1. The version lives in exactly one place: `project(EncorePlugins VERSION x.y.z)`
+   in `CMakeLists.txt`.
+2. Changing it is its own small pull request ("Release vX.Y.Z"), so a person sees the
+   number before it's built.
+3. Merging builds everything on `main`: the tests run, and the Windows installer and
+   VST3 zip and the Linux x64 and arm64 archives are uploaded as workflow artifacts.
+4. A person publishes the release in GitHub (Releases, Draft a new release, a new tag
+   `vX.Y.Z` on that `main` commit, Publish). Never a Claude session.
+5. The tag's CI run doesn't rebuild. It checks that the tag matches the version, finds
+   the successful `main` build of that exact commit and attaches its files, each with a
+   `.sha256` file, to the Release. If either check fails, nothing is attached.
+   If that commit was docs-only (its build was skipped), run CI by hand on `main`
+   (Actions, CI, Run workflow) and then re-run the release job.
+
 - Claude sessions can't push tags: the push is refused with HTTP 403. Don't try, and
   don't look for another way (the API, a workflow, a different remote). When a
-  release is due, tell your human the version number, why that number, and what
-  changed since the last release, then wait for them to publish it.
-- Keep the existing v0.4.0 tag and release as they are.
+  release is due, open the version pull request, then tell your human the version
+  number, why that number, and what changed since the last release, and wait for
+  them to publish it.
+- Tags `v*` are protected: they can't be moved or deleted (an org admin can, in an
+  emergency).
 
 ## Changes
 
