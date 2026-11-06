@@ -289,6 +289,23 @@ jobs:
             dist/ENCORE-VST-*-windows-x64-vst3.zip.sha256
           if-no-files-found: error
 
+  # The one check to require on main. It fails if any build or test job failed or
+  # was cancelled, and passes when they passed or were skipped (docs-only changes).
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [changes, linux, windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the build and test jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for r in $RESULTS; do
+            if [[ "$r" == failure || "$r" == cancelled ]]; then echo "::error::A build or test job did not pass"; exit 1; fi
+          done
+
   # A person publishes a Release in GitHub, which creates the v* tag. Nothing is
   # rebuilt: the files come from the successful main build of the same commit.
   release:
