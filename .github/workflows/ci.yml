@@ -76,9 +76,9 @@ jobs:
           fi
           echo "kind=$kind" >> "$GITHUB_OUTPUT"
           if [[ "$kind" == pr ]]; then
-            echo 'linux=[{"arch":"x64","runner":"ubuntu-24.04","formats":"VST3"}]' >> "$GITHUB_OUTPUT"
+            echo 'linux=[{"arch":"x64"}]' >> "$GITHUB_OUTPUT"
           else
-            echo 'linux=[{"arch":"x64","runner":"ubuntu-24.04","formats":"VST3;LV2"},{"arch":"arm64","runner":"ubuntu-24.04-arm","formats":"VST3;LV2"}]' >> "$GITHUB_OUTPUT"
+            echo 'linux=[{"arch":"x64"},{"arch":"arm64"}]' >> "$GITHUB_OUTPUT"
           fi
           if [[ "$EVENT" == "pull_request" ]]; then
             files=$(git diff --name-only "$PR_BASE" "$PR_HEAD")
@@ -106,7 +106,9 @@ jobs:
           fi
 
   linux:
-    name: Linux ${{ matrix.arch }} (${{ matrix.formats }} and tests)
+    # A fixed name: GitHub adds the matrix value to it ("Linux (x64)"), and a skipped
+    # run shows plain "Linux" instead of an unfilled ${{ }} template.
+    name: Linux
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind != 'release'
     strategy:
@@ -114,7 +116,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.linux) }}
     # arm64 runs on GitHub's native arm64 runner, never under emulation
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
@@ -148,7 +150,7 @@ jobs:
           restore-keys: ccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-
       - name: Configure
         env:
-          FORMATS: ${{ matrix.formats }}
+          FORMATS: ${{ needs.changes.outputs.kind == 'pr' && 'VST3' || 'VST3;LV2' }}
         run: >
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
