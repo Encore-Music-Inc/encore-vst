@@ -1,7 +1,7 @@
 # Notes for Claude (and whoever is driving it)
 
 This is ENCORE. VST: the five plugins (Vox, Verb, Equalize, Master, Strum),
-their Windows installer and their tests.
+their Windows and Mac installers and their tests.
 
 ## Decisions (already made, don't revisit)
 
@@ -60,6 +60,8 @@ their Windows installer and their tests.
   `xvfb-run -a ctest --test-dir build --output-on-failure`. All must pass before a
   pull request.
 - Windows: `build-and-install.ps1`; the installer: `installer/package.ps1`.
+- macOS: a universal build (`"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"`), `ctest`,
+  then `installer/macos/package.sh <version>` for the .pkg and zip.
 
 ## Versioning and releases
 
@@ -74,7 +76,8 @@ their Windows installer and their tests.
 2. Changing it is its own small pull request ("Release vX.Y.Z"), so a person sees the
    number before it's built.
 3. Merging builds everything on `main`: the tests run, and the Windows installer and
-   VST3 zip and the Linux x64 and arm64 archives are uploaded as workflow artifacts.
+   VST3 zip, the Mac .pkg and zip, and the Linux x64 and arm64 archives are uploaded
+   as workflow artifacts.
 4. A person publishes the release in GitHub (Releases, Draft a new release, a new tag
    `vX.Y.Z` on that `main` commit, Publish). Never a Claude session.
 5. The tag's CI run doesn't rebuild. It checks that the tag matches the version, finds
