@@ -32,7 +32,7 @@ encore-studio do not apply here; this file does.
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
 | `build-and-install.ps1`, `Install Encore Plugins.cmd` | Windows: build, test and install locally |
-| `.github/workflows/ci.yml` | Linux x64 on pull requests and main; Windows, installer and Linux arm64 on `v*` tags and manual runs; the Release on tags |
+| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild |
 
 ## Submodules
 
@@ -49,6 +49,9 @@ encore-studio do not apply here; this file does.
 
 ## Building and testing
 
+- Keep builds fast: Ninja, ccache/sccache in CI, no full LTO (`ENCORE_LTO` is
+  OFF; THIN is ThinLTO/incremental LTCG), and tests link the plugins' own
+  libraries (`encore_plugin_test` in `CMakeLists.txt`) instead of compiling JUCE again.
 - Linux: install the packages listed in the README (JUCE 9 needs `libxi-dev`),
   then `cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release`, `cmake --build build`,
   `xvfb-run -a ctest --test-dir build --output-on-failure`. All must pass before a
@@ -61,8 +64,8 @@ encore-studio do not apply here; this file does.
   fails a tag that doesn't match it.
 - Releases are created by a person, never by a Claude session. In GitHub: Releases,
   Draft a new release, choose a new tag `vX.Y.Z` on `main`, Publish. That tag starts
-  CI, which builds everything and attaches the installer, the Linux archives and
-  their `.sha256` files to the Release.
+  CI, which doesn't rebuild: it attaches the files from the successful main build
+  of that commit (with `.sha256` files) to the Release.
 - Claude sessions can't push tags: the push is refused with HTTP 403. Don't try, and
   don't look for another way (the API, a workflow, a different remote). When a
   release is due, tell your human the version number, why that number, and what

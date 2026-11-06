@@ -4,6 +4,10 @@
 #
 #   cd <your clone of encore-vst>
 #   powershell -ExecutionPolicy Bypass -File .\installer\package.ps1
+#
+# If build\ is already configured (CI configures it with Ninja and a compiler
+# cache), that configuration is used as it is.
+param([string]$Generator = "Visual Studio 17 2022")
 $ErrorActionPreference = "Stop"
 # CMake from the VS 2022 Build Tools if they're installed, otherwise the one on PATH
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -19,7 +23,10 @@ if (-not (Test-Path "external\JUCE\CMakeLists.txt") -or -not (Test-Path "externa
 }
 function Run($what) { & $what[0] $what[1..($what.Count - 1)]; if ($LASTEXITCODE -ne 0) { throw "Failed: $what" } }
 
-if (-not (Test-Path build)) { Run @($cmake, "-B", "build", "-G", "Visual Studio 17 2022", "-A", "x64") }
+if (-not (Test-Path "build\CMakeCache.txt")) {
+    if ($Generator -like "Visual Studio*") { Run @($cmake, "-B", "build", "-G", $Generator, "-A", "x64") }
+    else { Run @($cmake, "-B", "build", "-G", $Generator, "-DCMAKE_BUILD_TYPE=Release") }
+}
 Run @($cmake, "--build", "build", "--config", "Release", "--parallel")
 foreach ($t in "PresetTests", "StrumTests") {
     Write-Host "== $t" -ForegroundColor Cyan

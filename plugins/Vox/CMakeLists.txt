@@ -34,5 +34,5 @@ target_link_libraries(Vox
         EncoreFonts
     PUBLIC
         juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
+        encore_lto
         juce::juce_recommended_warning_flags)

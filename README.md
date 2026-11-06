@@ -29,6 +29,8 @@ Each release (under Releases on this repo) has:
   SmartScreen may warn you: click **More info**, then **Run anyway**. To add or
   remove plugins later, run it again or use **Modify** on ENCORE. VST in
   Windows Settings > Apps. Your presets are never touched.
+- `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
+  installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:
   VST3 and LV2 builds for 64-bit Linux on PCs and on Raspberry Pi (ENCORE. OS, or
   64-bit Raspberry Pi OS on a Pi 4 or 5). Copy the `.vst3` folders to `~/.vst3`
@@ -154,16 +156,42 @@ without JUCE) live in encore-audio-processing and run there.
 
 ## CI
 
-`.github/workflows/ci.yml`:
+`.github/workflows/ci.yml`. Each push starts one run (push for `main` and `v*`
+tags, plus pull requests and manual runs).
 
-- Pull requests and pushes to `main`: Linux x64 build of all five plugins and the tests.
-- `v*` tags and manual runs: also Linux arm64, and Windows x64 (the plugins,
-  the tests and the installer).
+| When | What runs |
+|---|---|
+| Pull request | Linux x64: the five plugins (VST3) and the tests |
+| Push to `main`, or a manual run | in parallel: Windows x64 (VST3, ENCORE. VST Setup and the tests), Linux x64 and Linux arm64 (VST3, LV2 and the tests). The files are kept as workflow artifacts |
+| `v*` tag | no build: the files from the successful `main` build of the tag's commit are attached to the Release |
+
 - A pull request or push that only changes `*.md`, `LICENSE` or
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
+- Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
 - While encore-audio-processing is private, CI needs a repository secret
   `ENCORE_AUDIO_PROCESSING_TOKEN`: a token with read access to that repo's
   contents, used to check out the submodule.
+
+### Build speed
+
+- Ninja on every platform, all cores.
+- A compiler cache: ccache on Linux, sccache on Windows, kept between runs with
+  `actions/cache`, keyed on OS, architecture, compiler and the JUCE pin.
+- JUCE is compiled once per plugin, inside each plugin's shared-code library
+  (`juce_add_plugin` does that). The tests and editor shots link those
+  libraries instead of compiling JUCE again, so a full build compiles JUCE 5
+  times instead of 12. One JUCE library shared by all five plugins isn't
+  possible with JUCE's CMake: `juce_add_plugin` links `juce_audio_plugin_client`
+  into each plugin, which brings every JUCE module's sources with it, and some
+  modules read the plugin's own settings (`JucePlugin_Name`, `JucePlugin_Build_*`).
+- No full LTO. `-DENCORE_LTO=THIN` turns on ThinLTO (Clang) or incremental LTCG
+  (MSVC); it is off because it didn't make Master measurably faster.
+  `MasterBench` (built with `-DENCORE_VST_BENCH=ON`) runs Master on a fixed
+  60 s test file (`MasterBench --make bench.wav`). On Linux x64 with Clang 18,
+  best of 7 runs, three rounds: 1.16 to 1.29 s of CPU without LTO, 1.21 to
+  1.24 s with ThinLTO (about 2% of one core either way, inside the run to run
+  noise, same output). GCC 13 without LTO: 1.30 to 1.36 s.
+- Submodules are checked out at depth 1, never recursively.
 
 ## Releases
 
@@ -174,8 +202,13 @@ tag that doesn't match it.
 
 A person at Encore Music, Inc. creates each release in GitHub: Releases, Draft
 a new release, choose a new tag `vX.Y.Z` on `main`, Publish. The tag starts CI,
-which builds and tests everything and attaches the Windows installer, the Linux
-x64 and arm64 archives and their `.sha256` files to the Release.
+which doesn't rebuild: it takes the files from the successful `main` build of
+that exact commit (the Windows installer and VST3 zip, the Linux x64 and arm64
+archives, each with a `.sha256` file) and attaches them to the Release. If that
+commit has no successful `main` build (it's still running, or the push only
+changed docs and skipped the builds), the release job fails and says so: run CI
+by hand on `main` (Actions, CI, Run workflow), then re-run the release job.
+Workflow artifacts are kept for 90 days, so release a commit within that time.
 
 Version 0.4.0 and earlier were published from a different repository; their
 release is kept here as it was.

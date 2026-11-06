@@ -34,7 +34,7 @@ foreach(t EncoreVstSetup EncoreVstSetupDev)
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
         ENCORE_VST_VERSION="${PROJECT_VERSION}")
     target_link_libraries(${t} PRIVATE juce::juce_gui_basics EncoreFonts
-        PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
+        PUBLIC juce::juce_recommended_config_flags encore_lto)
 endforeach()
 target_link_options(EncoreVstSetup PRIVATE "/MANIFESTUAC:level='requireAdministrator' uiAccess='false'")
 target_compile_definitions(EncoreVstSetupDev PRIVATE ENCORE_SETUP_DEV=1)
