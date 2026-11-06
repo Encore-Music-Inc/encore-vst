@@ -18,7 +18,7 @@ target_sources(Strum
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp)
 
-target_include_directories(Strum PRIVATE Source ${SNS_SHARED_DIR})
+target_include_directories(Strum PRIVATE Source ${ENCORE_INCLUDE_DIRS})
 
 target_compile_definitions(Strum
     PUBLIC

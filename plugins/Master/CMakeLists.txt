@@ -18,7 +18,7 @@ target_sources(Master
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp)
 
-target_include_directories(Master PRIVATE Source ${SNS_SHARED_DIR})
+target_include_directories(Master PRIVATE Source ${ENCORE_INCLUDE_DIRS})
 
 target_compile_definitions(Master
     PUBLIC

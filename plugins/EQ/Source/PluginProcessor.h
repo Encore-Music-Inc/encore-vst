@@ -41,7 +41,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Current parameter values as DSP settings (used by audio and the display)
+    // Current parameter values as audio processing settings (used by audio and the display)
     vs::EqBand::Settings readBand (int i) const;
     vs::DynamicBand::Settings readSmart (int i) const;
     vs::Carve::Settings readCarve() const;

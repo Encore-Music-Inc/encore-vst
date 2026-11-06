@@ -1,3 +1,6 @@
-[submodule "JUCE"]
-	path = JUCE
+[submodule "external/JUCE"]
+	path = external/JUCE
 	url = https://github.com/juce-framework/JUCE.git
+[submodule "external/encore-audio-processing"]
+	path = external/encore-audio-processing
+	url = https://github.com/Encore-Music-Inc/encore-audio-processing.git

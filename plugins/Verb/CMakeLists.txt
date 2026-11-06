@@ -18,7 +18,7 @@ target_sources(Verb
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp)
 
-target_include_directories(Verb PRIVATE Source ${SNS_SHARED_DIR})
+target_include_directories(Verb PRIVATE Source ${ENCORE_INCLUDE_DIRS})
 
 target_compile_definitions(Verb
     PUBLIC

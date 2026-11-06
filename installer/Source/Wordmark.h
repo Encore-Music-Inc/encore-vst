@@ -1,4 +1,4 @@
-// Generated from web/master/brand/encore-wordmark.svg: the ENCORE. letters, and its orange square
+// Generated from the ENCORE. wordmark SVG (encore-wordmark.svg in the brand files): the ENCORE. letters, and its orange square
 #pragma once
 namespace setup::wordmark
 {

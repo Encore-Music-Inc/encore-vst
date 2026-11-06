@@ -1,15 +1,24 @@
-# Builds every Encore plugin (Release), runs all the DSP tests, then
+# Builds every ENCORE. plugin (Release), runs the plugin tests, then
 # installs the VST3s to the shared folder Cubase scans (one admin prompt).
 # Close Cubase first, or Windows won't let the old plugin files be replaced.
 $ErrorActionPreference = "Stop"
+# CMake from the VS 2022 Build Tools if they're installed, otherwise the one on PATH
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+if (-not (Test-Path $cmake)) { $cmake = (Get-Command cmake -ErrorAction Stop).Source }
 
 Set-Location $PSScriptRoot
+
+# The submodules (JUCE and the audio processing code). Not --recursive:
+# encore-audio-processing's own external/JUCE is only for its own tests.
+if (-not (Test-Path "external\JUCE\CMakeLists.txt") -or -not (Test-Path "external\encore-audio-processing\dsp\MasterChain.h")) {
+    git submodule update --init external/JUCE external/encore-audio-processing
+    if ($LASTEXITCODE -ne 0) { throw "git submodule update failed" }
+}
 if (-not (Test-Path build)) { & $cmake -B build -G "Visual Studio 17 2022" -A x64 }
 & $cmake --build build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
-foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests", "StrumTests") {
+foreach ($t in "PresetTests", "StrumTests") {
     Write-Host "`n== $t" -ForegroundColor Cyan
     & "$PSScriptRoot\build\$($t)_artefacts\Release\$t.exe"
     if ($LASTEXITCODE -ne 0) { throw "$t failed, not installing" }

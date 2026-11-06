@@ -29,7 +29,7 @@ foreach(t EncoreVstSetup EncoreVstSetupDev)
         VERSION ${PROJECT_VERSION}
         ICON_BIG ${CMAKE_CURRENT_SOURCE_DIR}/icon.png)
     target_sources(${t} PRIVATE Source/Main.cpp Source/InstallCore.cpp Source/Platform.cpp "${rc}")
-    target_include_directories(${t} PRIVATE Source ${SNS_SHARED_DIR})
+    target_include_directories(${t} PRIVATE Source ${ENCORE_INCLUDE_DIRS})
     target_compile_definitions(${t} PRIVATE
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
         ENCORE_VST_VERSION="${PROJECT_VERSION}")

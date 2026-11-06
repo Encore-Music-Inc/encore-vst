@@ -2,17 +2,26 @@
 # of each for its card, the plugins zipped into the payload, then the installer
 # and its own tests. Result: dist\ENCORE-VST-<version>-windows-setup.exe
 #
-#   cd C:\Users\jimmy\projects\sick-and-sad
+#   cd <your clone of encore-vst>
 #   powershell -ExecutionPolicy Bypass -File .\installer\package.ps1
 $ErrorActionPreference = "Stop"
+# CMake from the VS 2022 Build Tools if they're installed, otherwise the one on PATH
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+if (-not (Test-Path $cmake)) { $cmake = (Get-Command cmake -ErrorAction Stop).Source }
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
+
+# The submodules (JUCE and the audio processing code). Not --recursive:
+# encore-audio-processing's own external/JUCE is only for its own tests.
+if (-not (Test-Path "external\JUCE\CMakeLists.txt") -or -not (Test-Path "external\encore-audio-processing\dsp\MasterChain.h")) {
+    git submodule update --init external/JUCE external/encore-audio-processing
+    if ($LASTEXITCODE -ne 0) { throw "git submodule update failed" }
+}
 function Run($what) { & $what[0] $what[1..($what.Count - 1)]; if ($LASTEXITCODE -ne 0) { throw "Failed: $what" } }
 
 if (-not (Test-Path build)) { Run @($cmake, "-B", "build", "-G", "Visual Studio 17 2022", "-A", "x64") }
 Run @($cmake, "--build", "build", "--config", "Release", "--parallel")
-foreach ($t in "PitchTests", "PresetTests", "VerbTests", "EqTests", "MasterTests", "StrumTests") {
+foreach ($t in "PresetTests", "StrumTests") {
     Write-Host "== $t" -ForegroundColor Cyan
     Run @("$root\build\$($t)_artefacts\Release\$t.exe")
 }
