@@ -1,0 +1,217 @@
+name: CI
+
+# Pull requests run once (pull_request); main and v* tags run on push.
+# Docs-only changes skip the heavy jobs (see the changes job).
+#
+#   pull request, push to main: Linux x64 build of the five plugins and the tests
+#   v* tag, manual run:         also Windows x64 (plugins and the installer) and Linux arm64
+#   v* tag:                     the files are attached to the GitHub Release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  # <folder under plugins/>:<CMake target>
+  PLUGINS: Vox:Vox Verb:Verb EQ:SnsEQ Master:Master Strum:Strum
+  # Ubuntu packages JUCE 9 needs to build plugins on Linux
+  LINUX_DEPS: >-
+    ninja-build xvfb xauth
+    libasound2-dev libjack-jackd2-dev ladspa-sdk
+    libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev
+    libxext-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev
+    libglu1-mesa-dev mesa-common-dev
+
+jobs:
+  # Decides whether the heavy jobs need to run. A pull request or push that only
+  # touches docs (*.md, LICENSE, .github/CODEOWNERS) skips them; skipped jobs count
+  # as passing, so docs-only pull requests stay mergeable when checks are required.
+  # Tags and manual runs always run everything.
+  changes:
+    name: What changed
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      full: ${{ steps.diff.outputs.full }}
+      linux_arches: ${{ steps.diff.outputs.linux_arches }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Windows, the installer and Linux arm64 only on tags and manual runs
+          if [[ "$REF" == refs/tags/v* || "$EVENT" == "workflow_dispatch" ]]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            echo 'linux_arches=["x64","arm64"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+            echo 'linux_arches=["x64"]' >> "$GITHUB_OUTPUT"
+          fi
+          if [[ "$EVENT" == "pull_request" ]]; then
+            files=$(git diff --name-only "$PR_BASE" "$PR_HEAD")
+          elif [[ "$EVENT" == "push" && "$REF" == refs/heads/* && -n "$PUSH_BEFORE" && "$PUSH_BEFORE" != 0000000000000000000000000000000000000000 ]]; then
+            files=$(git diff --name-only "$PUSH_BEFORE" "$SHA")
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "Tag or manual run: everything runs"; exit 0
+          fi
+          echo "Changed files:"; echo "$files"
+          code=$(echo "$files" | grep -Ev '(\.md$|^LICENSE$|^\.github/CODEOWNERS$)' | grep -c . || true)
+          if [[ "$code" -gt 0 ]]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; echo "Docs only: builds and tests are skipped"; fi
+      - id: version
+        name: Version (from CMakeLists.txt; a tag must match it)
+        env:
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version=$(sed -nE 's/^project\(EncorePlugins VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version: $version"
+          if [[ "$REF" == refs/tags/v* && "v$version" != "$REF_NAME" ]]; then
+            echo "::error::Tag $REF_NAME does not match the version in CMakeLists.txt ($version). Change project(EncorePlugins VERSION ...) on main first."
+            exit 1
+          fi
+
+  linux:
+    name: Linux ${{ matrix.arch }} (plugins and tests)
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        # x64 on every pull request and push to main; arm64 too on tags and manual runs
+        arch: ${{ fromJSON(needs.changes.outputs.linux_arches) }}
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    steps:
+      # Submodules are not recursive: encore-audio-processing's own external/JUCE is
+      # for its tests only. While encore-audio-processing is private, the
+      # ENCORE_AUDIO_PROCESSING_TOKEN secret (read access to it) is needed here.
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.ENCORE_AUDIO_PROCESSING_TOKEN || github.token }}
+          persist-credentials: false
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+      # StrumTests and the editor shots open the plugins' editors, so they need an X display
+      - name: Test
+        run: xvfb-run -a ctest --test-dir build --output-on-failure
+      - name: Package
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.changes.outputs.version }}
+        run: |
+          set -euo pipefail
+          name="ENCORE-VST-$VERSION-linux-$ARCH"
+          mkdir -p "dist/$name/VST3" "dist/$name/LV2"
+          for p in $PLUGINS; do
+            dir="${p%%:*}"; target="${p##*:}"
+            cp -R build/plugins/$dir/${target}_artefacts/Release/VST3/*.vst3 "dist/$name/VST3/"
+            cp -R build/plugins/$dir/${target}_artefacts/Release/LV2/*.lv2 "dist/$name/LV2/"
+          done
+          cp LICENSE THIRD-PARTY-NOTICES.md TRADEMARKS.md "dist/$name/"
+          tar -C dist -czf "$name.tar.gz" "$name"
+          sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
+          cat "$name.tar.gz.sha256"
+          tar -tzf "$name.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: |
+            ENCORE-VST-*-linux-*.tar.gz
+            ENCORE-VST-*-linux-*.tar.gz.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: editor-shots-linux-${{ matrix.arch }}
+          path: build/shots/*.png
+
+  windows:
+    name: Windows x64 (plugins, tests and installer)
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.ENCORE_AUDIO_PROCESSING_TOKEN || github.token }}
+          persist-credentials: false
+      # Builds the plugins, runs PresetTests and StrumTests, draws each editor for
+      # its card, builds ENCORE. VST Setup and runs SetupTests
+      - name: Build the installer (installer/package.ps1)
+        shell: pwsh
+        run: ./installer/package.ps1
+      - name: SHA-256
+        shell: bash
+        env:
+          VERSION: ${{ needs.changes.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          f="ENCORE-VST-$VERSION-windows-setup.exe"
+          test -f "$f"
+          sha256sum "$f" > "$f.sha256"
+          cat "$f.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: |
+            dist/ENCORE-VST-*-windows-setup.exe
+            dist/ENCORE-VST-*-windows-setup.exe.sha256
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [changes, linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: files
+          merge-multiple: true
+      - name: Attach the files to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd files
+          ls -l
+          for s in *.sha256; do sha256sum -c "$s"; done
+          shopt -s nullglob
+          assets=(ENCORE-VST-*-windows-setup.exe ENCORE-VST-*-windows-setup.exe.sha256 ENCORE-VST-*-linux-*.tar.gz ENCORE-VST-*-linux-*.tar.gz.sha256)
+          test "${#assets[@]}" -eq 6
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "${assets[@]}" --verify-tag --title "ENCORE. VST $TAG" \
+              --notes "Windows installer and Linux x64 and arm64 builds (VST3 and LV2). SHA-256 files are next to each download." \
+              --repo "$GITHUB_REPOSITORY"
+          fi
