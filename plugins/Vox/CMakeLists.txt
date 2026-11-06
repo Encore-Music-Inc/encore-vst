@@ -4,7 +4,7 @@ juce_add_plugin(Vox
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsVx
     FORMATS ${ENCORE_PLUGIN_FORMATS}
-    LV2URI "https://londo.tech/encore/plugins/vox"
+    LV2URI "https://encoremusic.studio/plugins/vox"
     PRODUCT_NAME "Encore Vox"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE

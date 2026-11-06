@@ -119,7 +119,7 @@ namespace setup
         juce::WindowsRegistry::setValue (key + "InstallLocation", o.vst3Dir.getFullPathName());
         juce::WindowsRegistry::setValue (key + "UninstallString", quoted + " --uninstall");
         juce::WindowsRegistry::setValue (key + "ModifyPath", quoted);
-        juce::WindowsRegistry::setValue (key + "URLInfoAbout", "https://www.londo.tech/encore-studio/vst.html");
+        juce::WindowsRegistry::setValue (key + "URLInfoAbout", "https://encoremusic.studio");
         juce::WindowsRegistry::setValue (key + "EstimatedSize", (juce::uint32) (bytes / 1024));
         juce::WindowsRegistry::setValue (key + "NoRepair", (juce::uint32) 1);
     }

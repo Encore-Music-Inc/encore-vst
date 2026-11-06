@@ -4,7 +4,7 @@ juce_add_plugin(Master
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsMs
     FORMATS ${ENCORE_PLUGIN_FORMATS}
-    LV2URI "https://londo.tech/encore/plugins/master"
+    LV2URI "https://encoremusic.studio/plugins/master"
     PRODUCT_NAME "Encore Master"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE

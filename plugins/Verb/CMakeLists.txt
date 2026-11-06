@@ -4,7 +4,7 @@ juce_add_plugin(Verb
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsVb
     FORMATS ${ENCORE_PLUGIN_FORMATS}
-    LV2URI "https://londo.tech/encore/plugins/verb"
+    LV2URI "https://encoremusic.studio/plugins/verb"
     PRODUCT_NAME "Encore Verb"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE

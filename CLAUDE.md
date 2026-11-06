@@ -28,7 +28,7 @@ encore-studio do not apply here; this file does.
 | `plugins/<Name>/` | one folder per plugin; the EQ's CMake target is `SnsEQ` |
 | `shared/` | `EncoreProcessorBase.h` and `ui/` (controls, presets, theme, `fonts/`) |
 | `installer/` | ENCORE. VST Setup (Windows) and `package.ps1`, which builds it |
-| `tests/` | PresetTests, SetupTests, EditorShot (the Shot<Name> targets) |
+| `tests/` | PresetTests, SetupTests, EditorShot (the Shot<Name> targets), MasterBench (Master's CPU use, `-DENCORE_VST_BENCH=ON`) |
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
 | `build-and-install.ps1`, `Install Encore Plugins.cmd` | Windows: build, test and install locally |

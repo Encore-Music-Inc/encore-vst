@@ -4,7 +4,7 @@ juce_add_plugin(SnsEQ
     PLUGIN_MANUFACTURER_CODE SnSd
     PLUGIN_CODE SsEq
     FORMATS ${ENCORE_PLUGIN_FORMATS}
-    LV2URI "https://londo.tech/encore/plugins/eq"
+    LV2URI "https://encoremusic.studio/plugins/eq"
     PRODUCT_NAME "Encore Equalize"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
