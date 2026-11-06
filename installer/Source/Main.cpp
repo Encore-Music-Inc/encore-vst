@@ -438,7 +438,7 @@ namespace
             switch (page)
             {
                 case Page::choose:
-                    return args.uninstall ? "This removes all ENCORE. VST plugins from this PC. Your presets in Documents\\Encore stay. "
+                    return args.uninstall ? "This removes all ENCORE. VST plugins from this PC. Your presets in Documents\\ENCORE stay. "
                                             "To remove only some, open Settings, Apps, ENCORE. VST and choose Modify instead."
                                           : "Untick any you don't want. Run this again any time to add or remove one.";
                 case Page::working: return "This takes a few seconds.";
@@ -452,7 +452,7 @@ namespace
                 if (s == Status::inUse || s == Status::failed)
                     return "Some plugins couldn't be changed (see below). Close your DAW and run this again.";
             if (count (true) == 0)
-                return "ENCORE. VST is removed. Your presets in Documents\\Encore stay, in case you come back.";
+                return "ENCORE. VST is removed. Your presets in Documents\\ENCORE stay, in case you come back.";
             return "Open your DAW and scan for new plugins. In Cubase: Studio > VST Plug-in Manager, then Rescan. Most other DAWs scan when they start.";
         }
 

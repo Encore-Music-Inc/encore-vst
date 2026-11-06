@@ -1,8 +1,7 @@
 # Notes for Claude (and whoever is driving it)
 
 This is ENCORE. VST: the five plugins (Vox, Verb, Equalize, Master, Strum),
-their Windows installer and their tests. The notes in sick-and-sad and
-encore-studio do not apply here; this file does.
+their Windows installer and their tests.
 
 ## Decisions (already made, don't revisit)
 
@@ -19,19 +18,19 @@ encore-studio do not apply here; this file does.
 - Anything third-party goes in `THIRD-PARTY-NOTICES.md`.
 - The product: VST3 on Windows x64 (with the installer), and VST3 plus LV2 on
   Linux x64 and arm64 (ENCORE. OS on Raspberry Pi).
-- Green Room code (sick-and-sad's old `web/`) must never be added here.
+- Green Room code must never be added here (Green Room lives in the encoremusic repo).
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `plugins/<Name>/` | one folder per plugin; the EQ's CMake target is `SnsEQ` |
+| `plugins/<Name>/` | one folder per plugin; each folder's CMake target has the same name |
 | `shared/` | `EncoreProcessorBase.h` and `ui/` (controls, presets, theme, `fonts/`) |
 | `installer/` | ENCORE. VST Setup (Windows) and `package.ps1`, which builds it |
 | `tests/` | PresetTests, SetupTests, EditorShot (the Shot<Name> targets), MasterBench (Master's CPU use, `-DENCORE_VST_BENCH=ON`) |
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
-| `build-and-install.ps1`, `Install Encore Plugins.cmd` | Windows: build, test and install locally |
+| `build-and-install.ps1`, `Install ENCORE Plugins.cmd` | Windows: build, test and install locally |
 | `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
 
 ## Submodules

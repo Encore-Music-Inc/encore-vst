@@ -39,10 +39,6 @@ int main()
     o.thisSetup = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
     juce::WindowsRegistry::deleteKey (o.registryKey);
 
-    // an old "Sick & Sad" copy, which installing Vox should clear away
-    vst.getChildFile ("Sick & Sad Vox.vst3/Contents/x86_64-win").createDirectory();
-    vst.getChildFile ("Sick & Sad Vox.vst3/Contents/x86_64-win/Sick & Sad Vox.vst3").replaceWithText ("old");
-
     // 1. a fresh install of Vox and Strum
     std::vector<std::pair<int, setup::Status>> reports;
     auto r = setup::apply (zip, o, { true, false, false, false, true }, [&] (int i, setup::Status s) { reports.push_back ({ i, s }); });
@@ -51,7 +47,6 @@ int main()
     expect ("fresh: Vox's plugin file is there", dll (vst, 0).getSize() > 1000000, juce::String (dll (vst, 0).getSize()) + " bytes");
     expect ("fresh: moduleinfo gives a version", setup::installedVersion (vst, setup::plugins[0]).containsChar ('.'), setup::installedVersion (vst, setup::plugins[0]));
     expect ("fresh: Verb reads as not installed", setup::installedVersion (vst, setup::plugins[1]).isEmpty());
-    expect ("fresh: old Sick & Sad Vox removed", ! vst.getChildFile ("Sick & Sad Vox.vst3").exists());
     expect ("fresh: progress reported working then installed", reports.size() >= 4 && reports[0].second == setup::Status::working);
     expect ("fresh: no leftover .old folders", vst.findChildFiles (juce::File::findDirectories, false, "*.tmp").isEmpty());
 
@@ -90,7 +85,7 @@ int main()
     // 5. uninstall everything: plugins, the entry and the kept setup all go
     r = setup::apply (zip, o, { false, false, false, false, false });
     expect ("uninstall: Vox and Verb removed", r[0] == setup::Status::removed && r[1] == setup::Status::removed);
-    expect ("uninstall: VST3 folder holds none of ours", vst.findChildFiles (juce::File::findDirectories, false, "Encore *.vst3").isEmpty());
+    expect ("uninstall: VST3 folder holds none of ours", vst.findChildFiles (juce::File::findDirectories, false, "ENCORE *.vst3").isEmpty());
     expect ("uninstall: registry entry gone", ! juce::WindowsRegistry::keyExists (o.registryKey));
     expect ("uninstall: kept setup gone", ! o.setupFolder.exists());
 

@@ -11,7 +11,7 @@
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
 
-// Encore: Strum, the acoustic guitar fixer. One section per real problem:
+// ENCORE. Strum, the acoustic guitar fixer. One section per real problem:
 //   Body    make a pickup/DI sound like a mic (Learn from a mic on the side-chain, or a generic curve)
 //   Boom    tame a soundhole mic's low-end build-up
 //   Squeak  turn down finger squeaks on slides

@@ -3,11 +3,11 @@
 namespace setup
 {
     const std::array<PluginInfo, numPlugins> plugins {{
-        { "VOX",      "Encore Vox",      "Sick & Sad Vox",    "Your whole vocal chain: clean up, tune, harmony, rider, tone and space.", "SHOT_VOX" },
-        { "VERB",     "Encore Verb",     "Sick & Sad Verb",   "Reverb: rooms, chambers, plates, halls, springs and a huge shimmer.",     "SHOT_VERB" },
-        { "EQUALIZE", "Encore Equalize", "Sick & Sad EQ",     "8-band EQ with a live spectrum, plus Smart carving and resonance cuts.",  "SHOT_EQ" },
-        { "MASTER",   "Encore Master",   "Sick & Sad Master", "One-click mastering: pick a style, it learns your song, sets loudness.",  "SHOT_MASTER" },
-        { "STRUM",    "Encore Strum",    "Sick & Sad Strum",  "Acoustic guitar fixer: a DI that sounds miked, less boom, squeak, pick.", "SHOT_STRUM" },
+        { "VOX",      "ENCORE Vox",      "Your whole vocal chain: clean up, tune, harmony, rider, tone and space.", "SHOT_VOX" },
+        { "VERB",     "ENCORE Verb",     "Reverb: rooms, chambers, plates, halls, springs and a huge shimmer.",     "SHOT_VERB" },
+        { "EQUALIZE", "ENCORE Equalize", "8-band EQ with a live spectrum, plus Smart carving and resonance cuts.",  "SHOT_EQ" },
+        { "MASTER",   "ENCORE Master",   "One-click mastering: pick a style, it learns your song, sets loudness.",  "SHOT_MASTER" },
+        { "STRUM",    "ENCORE Strum",    "Acoustic guitar fixer: a DI that sounds miked, less boom, squeak, pick.", "SHOT_STRUM" },
     }};
 
     static juce::File bundleIn (const juce::File& dir, const char* name)
@@ -181,10 +181,6 @@ namespace setup
 
             if (had)
                 old.deleteRecursively();
-
-            const auto legacy = bundleIn (o.vst3Dir, p.legacy);
-            if (legacy.isDirectory())
-                legacy.deleteRecursively();
 
             tell (i, Status::installed);
         }

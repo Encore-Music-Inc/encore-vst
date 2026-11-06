@@ -25,17 +25,14 @@ foreach ($t in "PresetTests", "StrumTests") {
 }
 
 $plugins = @(
-    @{ Dir = "Vox";  Target = "Vox";   Name = "Encore Vox";      Old = "Sick & Sad Vox"  },
-    @{ Dir = "Verb"; Target = "Verb";  Name = "Encore Verb";     Old = "Sick & Sad Verb" },
-    @{ Dir = "EQ";   Target = "SnsEQ"; Name = "Encore Equalize"; Old = "Sick & Sad EQ"   },
-    @{ Dir = "Master"; Target = "Master"; Name = "Encore Master"; Old = "Sick & Sad Master" },
-    @{ Dir = "Strum"; Target = "Strum"; Name = "Encore Strum"; Old = "Sick & Sad Strum" }
+    @{ Dir = "Vox";    Target = "Vox";    Name = "ENCORE Vox" },
+    @{ Dir = "Verb";   Target = "Verb";   Name = "ENCORE Verb" },
+    @{ Dir = "EQ";     Target = "EQ";     Name = "ENCORE Equalize" },
+    @{ Dir = "Master"; Target = "Master"; Name = "ENCORE Master" },
+    @{ Dir = "Strum";  Target = "Strum";  Name = "ENCORE Strum" }
 )
 $vst = "$env:CommonProgramFiles\VST3"
-# The plugins used to be called "Sick & Sad ..." with the same IDs; remove those
-# copies so Cubase doesn't find each plugin twice (projects keep working: the IDs match).
 $copies = foreach ($p in $plugins) {
-    "if exist `"$vst\$($p.Old).vst3`" rmdir /s /q `"$vst\$($p.Old).vst3`""
     $src = "$PSScriptRoot\build\plugins\$($p.Dir)\$($p.Target)_artefacts\Release\VST3\$($p.Name).vst3"
     "robocopy `"$src`" `"$vst\$($p.Name).vst3`" /E /NFL /NDL /NJH /NJS"
 }

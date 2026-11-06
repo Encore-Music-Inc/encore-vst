@@ -113,7 +113,7 @@ if(ENCORE_VST_TESTS)
     # Each plugin's editor drawn to a PNG (EditorShot.cpp), for checking the look.
     # The installer uses these for its plugin cards.
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/shots")
-    foreach(shot Vox:Vox Verb:Verb EQ:SnsEQ Master:Master Strum:Strum)
+    foreach(shot Vox:Vox Verb:Verb EQ:EQ Master:Master Strum:Strum)
         string(REPLACE ":" ";" shot "${shot}")
         list(GET shot 0 name)
         list(GET shot 1 plugin)

@@ -14,8 +14,7 @@
 
 // The shared ENCORE. look: warm near-black panels, ember-orange accent, paper-white
 // text, arc knobs and pill on/off switches. The colours are encoremusic.studio's own
-// tokens (encore-tokens.css in ENCORE. Green Room), so the plugins, Basement Studio and the web
-// tools read as one family. Every plugin in the suite uses this.
+// design tokens, so the plugins, Basement Studio and encoremusic.studio read as one family. Every plugin in the suite uses this.
 namespace vs
 {
     namespace theme

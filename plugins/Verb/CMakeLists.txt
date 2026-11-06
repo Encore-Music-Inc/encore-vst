@@ -1,11 +1,12 @@
 juce_add_plugin(Verb
-    COMPANY_NAME "Encore"
+    COMPANY_NAME "ENCORE."
     BUNDLE_ID com.encoremusic.verb
-    PLUGIN_MANUFACTURER_CODE SnSd
-    PLUGIN_CODE SsVb
+    PLUGIN_MANUFACTURER_CODE Encr
+    PLUGIN_CODE EnVb
     FORMATS ${ENCORE_PLUGIN_FORMATS}
     LV2URI "https://encoremusic.studio/plugins/verb"
-    PRODUCT_NAME "Encore Verb"
+    PRODUCT_NAME "ENCORE Verb"
+    PLUGIN_NAME "ENCORE. Verb"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

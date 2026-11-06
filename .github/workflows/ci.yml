@@ -35,7 +35,7 @@ env:
     libxext-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev
     libglu1-mesa-dev mesa-common-dev
   # <folder under plugins/>:<CMake target>
-  PLUGINS: Vox:Vox Verb:Verb EQ:SnsEQ Master:Master Strum:Strum
+  PLUGINS: Vox:Vox Verb:Verb EQ:EQ Master:Master Strum:Strum
   SCCACHE_VERSION: v0.10.0
   SCCACHE_SHA256: 6d8823b5c13e0dba776d88c537229256ecb2f01a1d775b507fd141cb55d30578
 

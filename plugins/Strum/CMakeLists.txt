@@ -1,11 +1,12 @@
 juce_add_plugin(Strum
-    COMPANY_NAME "Encore"
+    COMPANY_NAME "ENCORE."
     BUNDLE_ID com.encoremusic.strum
-    PLUGIN_MANUFACTURER_CODE SnSd
-    PLUGIN_CODE SsSt
+    PLUGIN_MANUFACTURER_CODE Encr
+    PLUGIN_CODE EnSt
     FORMATS ${ENCORE_PLUGIN_FORMATS}
     LV2URI "https://encoremusic.studio/plugins/strum"
-    PRODUCT_NAME "Encore Strum"
+    PRODUCT_NAME "ENCORE Strum"
+    PLUGIN_NAME "ENCORE. Strum"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
