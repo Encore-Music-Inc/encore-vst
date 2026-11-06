@@ -32,7 +32,7 @@ encore-studio do not apply here; this file does.
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
 | `build-and-install.ps1`, `Install Encore Plugins.cmd` | Windows: build, test and install locally |
-| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild |
+| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
 
 ## Submodules
 
