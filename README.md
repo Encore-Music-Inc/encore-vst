@@ -1,6 +1,6 @@
 # ENCORE. VST
 
-Free audio plugins from ENCORE., for any DAW that loads VST3 (and LV2 on Linux):
+Free audio plugins from ENCORE., for any DAW that loads VST3, Audio Units (Mac) or LV2 (Linux):
 
 | Plugin | What it is |
 |---|---|
@@ -11,7 +11,8 @@ Free audio plugins from ENCORE., for any DAW that loads VST3 (and LV2 on Linux):
 | **Strum** | Acoustic guitar fixer: Body (pickup to mic: Learn from a mic on the side-chain, or a generic curve), Boom, Squeak, Pick, Double, loudness-matched A/B |
 
 Every plugin has factory presets plus user presets
-(`Documents\ENCORE\<Plugin>\Presets\*.encorepreset` on Windows). The same
+(`Documents\ENCORE\<Plugin>\Presets\*.encorepreset` on Windows,
+`~/Documents/ENCORE/<Plugin>/Presets` on a Mac). The same
 plugins are built into ENCORE. Basement Studio.
 
 Copyright (c) Encore Music, Inc. Licensed under the GNU Affero General Public
@@ -32,6 +33,17 @@ Each release (under Releases on this repo) has:
   are never touched.
 - `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
   installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
+- `ENCORE-VST-<version>-macos.pkg`: the Mac installer, for Apple Silicon and
+  Intel Macs on macOS 11 or newer. It installs VST3 and Audio Units (for Logic
+  and GarageBand); **Customize** lets you untick plugins. It isn't signed or
+  notarized yet, so the first time macOS says it was "Not Opened": click
+  **Done**, go to **System Settings > Privacy & Security**, scroll to Security
+  and click **Open Anyway**, then open the installer again and click **Open
+  Anyway**. To remove a plugin, delete it from `/Library/Audio/Plug-Ins/VST3`
+  and `/Library/Audio/Plug-Ins/Components`.
+- `ENCORE-VST-<version>-macos.zip`: the same Mac plugins without the installer,
+  to copy to `/Library/Audio/Plug-Ins/VST3` and `/Library/Audio/Plug-Ins/Components`
+  yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:
   VST3 and LV2 builds for 64-bit Linux on PCs and on Raspberry Pi (ENCORE. OS, or
   64-bit Raspberry Pi OS on a Pi 4 or 5). Copy the `.vst3` folders to `~/.vst3`
@@ -49,6 +61,7 @@ shared/                             what the plugins share: EncoreProcessorBase.
 shared/ui/                          controls, presets (factory and user), the ENCORE. theme
 shared/ui/fonts/                    DM Sans and Space Mono (SIL OFL), built into every editor
 installer/                          ENCORE. VST Setup, the Windows installer (package.ps1 builds it)
+installer/macos/package.sh          the Mac installer (.pkg) and zip
 tests/                              plugin-level tests: presets, installer, editor screenshots
 external/JUCE                       JUCE 9 (submodule)
 external/encore-audio-processing    ENCORE.'s audio processing headers (submodule)
@@ -124,12 +137,19 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-### macOS (builds VST3 and AU; not released yet)
+### macOS (builds VST3 and AU)
+
+Xcode (or its Command Line Tools) and Ninja (`brew install ninja`).
 
 ```bash
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
 cmake --build build
+installer/macos/package.sh <version>   # dist/ENCORE-VST-<version>-macos.pkg and .zip
 ```
+
+`package.sh` checks every plugin is universal (Apple Silicon and Intel), signs
+them ad hoc (Apple Silicon won't load unsigned plugins) and builds the
+installer and the zip. Signing with a Developer ID and notarizing come later.
 
 The plugins land in `build/plugins/<Name>/<Target>_artefacts/Release/`
 (`VST3/`, `LV2/`, `AU/`, `Standalone/`).
@@ -161,20 +181,17 @@ tags, plus pull requests and manual runs).
 | When | What runs |
 |---|---|
 | Pull request | Linux x64: the five plugins (VST3) and the tests |
-| Push to `main`, or a manual run | in parallel: Windows x64 (VST3, ENCORE. VST Setup and the tests), Linux x64 and Linux arm64 (VST3, LV2 and the tests). The files are kept as workflow artifacts |
+| Push to `main`, or a manual run | in parallel: Windows x64 (VST3, ENCORE. VST Setup and the tests), macOS universal (VST3, AU, the .pkg and zip, and the tests; the .pkg is installed on the runner and each Audio Unit checked with `auval`), Linux x64 and Linux arm64 (VST3, LV2 and the tests). The files are kept as workflow artifacts |
 | `v*` tag | no build: the files from the successful `main` build of the tag's commit are attached to the Release |
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
 - Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
-- While encore-audio-processing is private, CI needs a repository secret
-  `ENCORE_AUDIO_PROCESSING_TOKEN`: a token with read access to that repo's
-  contents, used to check out the submodule.
 
 ### Build speed
 
 - Ninja on every platform, all cores.
-- A compiler cache: ccache on Linux, sccache on Windows, kept between runs with
+- A compiler cache: ccache on Linux and macOS, sccache on Windows, kept between runs with
   `actions/cache`, keyed on OS, architecture, compiler and the JUCE pin.
 - JUCE is compiled once per plugin, inside each plugin's shared-code library
   (`juce_add_plugin` does that). The tests and editor shots link those

@@ -4,8 +4,9 @@ name: CI
 #
 #   pull request          Linux x64: the five plugins (VST3) and the tests
 #   push to main, manual  the release files, in parallel: Windows x64 (VST3, the
-#                         installer and the tests), Linux x64 and Linux arm64 (VST3,
-#                         LV2 and the tests), uploaded as workflow artifacts
+#                         installer and the tests), macOS universal (VST3, AU, the
+#                         .pkg installer and the tests), Linux x64 and Linux arm64
+#                         (VST3, LV2 and the tests), uploaded as workflow artifacts
 #   v* tag                no rebuild: the files from the successful main build of
 #                         the tag's commit are attached to the GitHub Release
 #
@@ -125,14 +126,11 @@ jobs:
       CCACHE_MAXSIZE: 2G
     steps:
       # Submodules: depth 1 and not recursive (submodules: true, not 'recursive'):
-      # encore-audio-processing's own external/JUCE is for its tests only. While
-      # encore-audio-processing is private, the ENCORE_AUDIO_PROCESSING_TOKEN
-      # secret (read access to it) is needed.
+      # encore-audio-processing's own external/JUCE is for its tests only.
       - uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 1
-          token: ${{ secrets.ENCORE_AUDIO_PROCESSING_TOKEN || github.token }}
           persist-credentials: false
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
@@ -215,7 +213,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: 1
-          token: ${{ secrets.ENCORE_AUDIO_PROCESSING_TOKEN || github.token }}
           persist-credentials: false
       - name: MSVC environment (for Ninja)
         uses: ilammy/msvc-dev-cmd@v1
@@ -291,12 +288,104 @@ jobs:
             dist/ENCORE-VST-*-windows-x64-vst3.zip.sha256
           if-no-files-found: error
 
+  macos:
+    name: macOS (VST3, AU, installer and tests)
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind == 'build'
+    runs-on: macos-15
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_NOHASHDIR: 'true'
+      CCACHE_COMPRESS: 'true'
+      CCACHE_MAXSIZE: 2G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Install Ninja and ccache
+        run: brew install ninja ccache
+      - name: Cache key
+        id: key
+        run: |
+          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "compiler=xcode-$(xcodebuild -version | head -n 1 | tr -cd '0-9.')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+          restore-keys: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-
+      # One build for Apple Silicon and Intel Macs
+      - name: Configure
+        run: >
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          "-DENCORE_PLUGIN_FORMATS=VST3;AU"
+      - name: Build
+        run: |
+          ccache -z
+          cmake --build build --parallel "$(sysctl -n hw.ncpu)"
+          ccache -s
+      - uses: actions/cache/save@v4
+        if: always() && steps.key.outputs.juce != ''
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      # Checks the plugins are universal, signs them ad hoc, builds the .pkg and the zip
+      - name: Installer and zip (installer/macos/package.sh)
+        env:
+          VERSION: ${{ needs.changes.outputs.version }}
+        run: installer/macos/package.sh "$VERSION"
+      # Installs the .pkg the way a person would, then has macOS validate each
+      # installed Audio Unit (auval) and checks each VST3 is in place
+      - name: Install the .pkg and validate the Audio Units
+        env:
+          VERSION: ${{ needs.changes.outputs.version }}
+        run: |
+          set -euo pipefail
+          sudo installer -pkg "dist/ENCORE-VST-$VERSION-macos.pkg" -target /
+          for b in "ENCORE Vox" "ENCORE Verb" "ENCORE Equalize" "ENCORE Master" "ENCORE Strum"; do
+            test -d "/Library/Audio/Plug-Ins/VST3/$b.vst3"
+            test -d "/Library/Audio/Plug-Ins/Components/$b.component"
+            codesign --verify --strict "/Library/Audio/Plug-Ins/Components/$b.component"
+          done
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep Encr || true
+          for code in EnVx EnVb EnEq EnMs EnSt; do
+            echo "== auval aufx $code Encr"
+            if ! auval -strict -v aufx $code Encr > "auval-$code.log" 2>&1; then
+              tail -80 "auval-$code.log"
+              exit 1
+            fi
+            tail -3 "auval-$code.log"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: |
+            dist/ENCORE-VST-*-macos.pkg
+            dist/ENCORE-VST-*-macos.pkg.sha256
+            dist/ENCORE-VST-*-macos.zip
+            dist/ENCORE-VST-*-macos.zip.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editor-shots-macos
+          path: build/shots/*.png
+          if-no-files-found: ignore
+
   # The one check to require on main. It fails if any build or test job failed or
   # was cancelled, and passes when they passed or were skipped (docs-only changes).
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, linux, windows]
+    needs: [changes, linux, windows, macos]
     runs-on: ubuntu-24.04
     steps:
       - name: Check the build and test jobs
@@ -327,7 +416,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          need="linux-x64 linux-arm64 windows-x64"
+          need="linux-x64 linux-arm64 windows-x64 macos"
           runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&head_sha=$SHA&status=success&per_page=50" \
                  --jq '.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch") | .id')
           for id in $runs; do
@@ -342,7 +431,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN: ${{ steps.find.outputs.run }}
-        run: gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n linux-x64 -n linux-arm64 -n windows-x64 -D files
+        run: gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n linux-x64 -n linux-arm64 -n windows-x64 -n macos -D files
       - name: Attach them to the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -356,6 +445,7 @@ jobs:
           ls -l
           for s in *.sha256; do sha256sum -c "$s"; done
           for f in "ENCORE-VST-$VERSION-windows-setup.exe" "ENCORE-VST-$VERSION-windows-x64-vst3.zip" \
+                   "ENCORE-VST-$VERSION-macos.pkg" "ENCORE-VST-$VERSION-macos.zip" \
                    "ENCORE-VST-$VERSION-linux-x64.tar.gz" "ENCORE-VST-$VERSION-linux-arm64.tar.gz"; do
             test -f "$f" && test -f "$f.sha256" || { echo "::error::$f or its .sha256 is missing"; exit 1; }
           done
@@ -363,6 +453,6 @@ jobs:
             gh release upload "$TAG" ENCORE-VST-* --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" ENCORE-VST-* --verify-tag --title "ENCORE. VST $TAG" \
-              --notes "Windows installer and VST3 zip, and Linux x64 and arm64 builds (VST3 and LV2). A SHA-256 file is next to each download." \
+              --notes "Windows installer and VST3 zip, Mac installer and zip (VST3 and Audio Units, Apple Silicon and Intel), and Linux x64 and arm64 builds (VST3 and LV2). A SHA-256 file is next to each download." \
               --repo "$GITHUB_REPOSITORY"
           fi

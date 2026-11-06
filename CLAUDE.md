@@ -16,8 +16,12 @@ their Windows installer and their tests.
   means Spotify or Apple Music). Say "audio processing". Code folders and
   identifiers keep the name.
 - Anything third-party goes in `THIRD-PARTY-NOTICES.md`.
-- The product: VST3 on Windows x64 (with the installer), and VST3 plus LV2 on
-  Linux x64 and arm64 (ENCORE. OS on Raspberry Pi).
+- The product: VST3 on Windows x64 (with the installer), VST3 plus Audio Units
+  on macOS (universal, with a .pkg installer), and VST3 plus LV2 on Linux x64
+  and arm64 (ENCORE. OS on Raspberry Pi).
+- Mac builds are signed ad hoc only, not with a Developer ID, and not notarized,
+  until ENCORE. has an Apple Developer account. The README tells people how to
+  open them (Privacy & Security, Open Anyway).
 - Green Room code must never be added here (Green Room is part of the ENCORE. app, in the encoremusic repo).
 
 ## Layout
@@ -26,12 +30,12 @@ their Windows installer and their tests.
 |---|---|
 | `plugins/<Name>/` | one folder per plugin; each folder's CMake target has the same name |
 | `shared/` | `EncoreProcessorBase.h` and `ui/` (controls, presets, theme, `fonts/`) |
-| `installer/` | ENCORE. VST Setup (Windows) and `package.ps1`, which builds it |
+| `installer/` | ENCORE. VST Setup (Windows) and `package.ps1`, which builds it; `macos/package.sh`, the Mac .pkg and zip |
 | `tests/` | PresetTests, SetupTests, EditorShot (the Shot<Name> targets), MasterBench (Master's CPU use, `-DENCORE_VST_BENCH=ON`) |
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
 | `build-and-install.ps1`, `Install ENCORE Plugins.cmd` | Windows: build, test and install locally |
-| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
+| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, macOS universal with the .pkg, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
 
 ## Submodules
 
