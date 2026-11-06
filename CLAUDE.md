@@ -63,7 +63,6 @@ encore-studio do not apply here; this file does.
 - Semantic versioning, tags `vMAJOR.MINOR.PATCH`. MAJOR for anything that breaks
   people's saved work (a changed plugin ID or parameter, or presets that no longer
   load); MINOR for new features; PATCH for fixes.
-- Keep the existing v0.4.0 tag and release as they are.
 
 ## Release process
 
