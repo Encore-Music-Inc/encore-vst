@@ -1,0 +1,101 @@
+cmake_minimum_required(VERSION 3.22)
+
+# Mac builds run on macOS 11 and newer (set before project() so it sticks)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
+
+# Encore plugin collection. Each plugin lives in plugins/<Name>; reusable
+# DSP and UI pieces live in shared/.
+project(EncorePlugins VERSION 0.4.0)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(JUCE)
+
+set(SNS_SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared)
+
+# Plugin formats per platform: VST3 + Standalone everywhere, plus AU on Mac
+# (Logic and GarageBand only load AU) and LV2 on Linux (Ardour, Carla, etc.)
+set(ENCORE_PLUGIN_FORMATS VST3 Standalone)
+if(APPLE)
+    list(APPEND ENCORE_PLUGIN_FORMATS AU)
+elseif(UNIX)
+    list(APPEND ENCORE_PLUGIN_FORMATS LV2)
+endif()
+
+# The ENCORE. typefaces (DM Sans, Space Mono; SIL OFL), built into every editor
+juce_add_binary_data(EncoreFonts
+    HEADER_NAME EncoreFonts.h
+    NAMESPACE EncoreFonts
+    SOURCES
+        shared/ui/fonts/DMSans-Regular.ttf
+        shared/ui/fonts/DMSans-Bold.ttf
+        shared/ui/fonts/SpaceMono-Regular.ttf
+        shared/ui/fonts/SpaceMono-Bold.ttf)
+
+add_subdirectory(plugins/Vox)
+add_subdirectory(plugins/Verb)
+add_subdirectory(plugins/EQ)
+add_subdirectory(plugins/Master)
+add_subdirectory(plugins/Strum)
+
+# Offline DSP tests (not installed anywhere)
+juce_add_console_app(PitchTests PRODUCT_NAME "PitchTests")
+target_sources(PitchTests PRIVATE tests/PitchTests.cpp)
+target_include_directories(PitchTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(PitchTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(PitchTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+juce_add_console_app(PresetTests PRODUCT_NAME "PresetTests")
+target_sources(PresetTests PRIVATE tests/PresetTests.cpp)
+target_include_directories(PresetTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(PresetTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(PresetTests PRIVATE juce::juce_audio_processors PUBLIC juce::juce_recommended_config_flags)
+
+juce_add_console_app(VerbTests PRODUCT_NAME "VerbTests")
+target_sources(VerbTests PRIVATE tests/VerbTests.cpp)
+target_include_directories(VerbTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(VerbTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(VerbTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+juce_add_console_app(EqTests PRODUCT_NAME "EqTests")
+target_sources(EqTests PRIVATE tests/EqTests.cpp)
+target_include_directories(EqTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(EqTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(EqTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+juce_add_console_app(MasterTests PRODUCT_NAME "MasterTests")
+target_sources(MasterTests PRIVATE tests/MasterTests.cpp)
+target_include_directories(MasterTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(MasterTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(MasterTests PRIVATE juce::juce_dsp PUBLIC juce::juce_recommended_config_flags)
+
+# Strum's tests also build the plugin's processor, to check Learn, state and
+# presets end to end the way a host would drive them
+juce_add_console_app(StrumTests PRODUCT_NAME "StrumTests")
+target_sources(StrumTests PRIVATE tests/StrumTests.cpp plugins/Strum/Source/PluginProcessor.cpp plugins/Strum/Source/PluginEditor.cpp)
+target_include_directories(StrumTests PRIVATE ${SNS_SHARED_DIR} plugins/Strum/Source)
+target_compile_definitions(StrumTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 "JucePlugin_Name=\"Encore Strum\"")
+target_link_libraries(StrumTests PRIVATE juce::juce_audio_utils juce::juce_dsp EncoreFonts PUBLIC juce::juce_recommended_config_flags)
+
+# Each plugin's editor drawn to a PNG (EditorShot.cpp), for checking the look
+foreach(shot Vox Verb EQ Master Strum)
+    juce_add_console_app(Shot${shot} PRODUCT_NAME "Shot${shot}")
+    target_sources(Shot${shot} PRIVATE tests/EditorShot.cpp plugins/${shot}/Source/PluginProcessor.cpp plugins/${shot}/Source/PluginEditor.cpp)
+    target_include_directories(Shot${shot} PRIVATE ${SNS_SHARED_DIR} plugins/${shot}/Source)
+    target_compile_definitions(Shot${shot} PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 "JucePlugin_Name=\"Encore ${shot}\"")
+    target_link_libraries(Shot${shot} PRIVATE juce::juce_audio_utils juce::juce_dsp EncoreFonts PUBLIC juce::juce_recommended_config_flags)
+endforeach()
+
+# The browser build's configuration (no JUCE), tested natively
+add_executable(LiteMasterTests tests/LiteMasterTests.cpp)
+target_include_directories(LiteMasterTests PRIVATE ${SNS_SHARED_DIR})
+target_compile_definitions(LiteMasterTests PRIVATE VS_NO_JUCE=1 _USE_MATH_DEFINES)
+if (MSVC)
+    target_compile_options(LiteMasterTests PRIVATE /O2 /fp:fast)
+endif()
+
+# The branded installer (Windows only; needs a payload from installer/package.ps1)
+if(WIN32)
+    add_subdirectory(installer)
+endif()

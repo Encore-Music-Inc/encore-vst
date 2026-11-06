@@ -1,0 +1,12 @@
+The ENCORE. plugins (Vox, Verb, Equalize, Master, Strum), their installer and shared code
+
+Copyright (C) 2026 Encore Studio. All rights reserved.
+
+This software is proprietary. No license to use, copy, change, distribute or
+host it is granted except in writing by Encore Studio.
+
+Third-party code keeps its own license: JUCE (used under the JUCE 8 Starter
+licence), the Steinberg VST3 SDK bundled with JUCE (MIT from VST 3.8), and the
+font, sound and library license files that sit next to their files. Version
+0.4.0 of the ENCORE. plugins was published under the GNU AGPLv3; this notice
+covers later versions.
