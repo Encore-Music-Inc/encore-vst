@@ -1,0 +1,13 @@
+The ENCORE. typefaces, built into every plugin (the same two encoremusic.studio uses).
+Both are under the SIL Open Font License 1.1 (the OFL files next to these), which allows
+embedding them in software and selling that software; the fonts themselves are not sold.
+
+DM Sans (words): DMSans-Regular.ttf, DMSans-Bold.ttf
+  from https://github.com/googlefonts/dm-fonts  Sans/fonts/ttf/  (downloaded 2026-11-03)
+  sha256 a95a338942aa357145427be7c963ff691f9fe859c3512d9c0483e1914d57a208  DMSans-Regular.ttf
+  sha256 6a6924b35d757e32b21d611733d5b9a7bb6234b07b75334b0e2d2359985b26ee  DMSans-Bold.ttf
+
+Space Mono (numbers): SpaceMono-Regular.ttf, SpaceMono-Bold.ttf
+  from https://github.com/google/fonts  ofl/spacemono/  (downloaded 2026-11-03)
+  sha256 95837e182baeeada83368f7748db28357f0a1b75c6b84ff7065b5edf933c8e18  SpaceMono-Regular.ttf
+  sha256 405e73d41afb7e5906efce206a326af5c956f38e255f35421c260e861e599c59  SpaceMono-Bold.ttf
