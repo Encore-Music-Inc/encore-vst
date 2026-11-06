@@ -18,7 +18,7 @@ their Windows installer and their tests.
 - Anything third-party goes in `THIRD-PARTY-NOTICES.md`.
 - The product: VST3 on Windows x64 (with the installer), and VST3 plus LV2 on
   Linux x64 and arm64 (ENCORE. OS on Raspberry Pi).
-- Green Room code must never be added here (Green Room lives in the encoremusic repo).
+- Green Room code must never be added here (Green Room is part of the ENCORE. app, in the encoremusic repo).
 
 ## Layout
 
