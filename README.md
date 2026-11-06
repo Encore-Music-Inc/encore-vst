@@ -28,7 +28,8 @@ Each release (under Releases on this repo) has:
   11 (64-bit). Tick the plugins you want. It isn't code-signed yet, so
   SmartScreen may warn you: click **More info**, then **Run anyway**. To add or
   remove plugins later, run it again or use **Modify** on ENCORE. VST in
-  Windows Settings > Apps. Your presets are never touched.
+  Windows Settings > Apps. **Uninstall** there removes all of them. Your presets
+  are never touched.
 - `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
   installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:

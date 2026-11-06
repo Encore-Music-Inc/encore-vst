@@ -50,7 +50,9 @@ namespace setup::platform
 
     void deleteFolderAfterExit (const juce::File& folder)
     {
-        // A hidden cmd waits a few seconds for this program to close, then removes its folder
+        // A hidden cmd waits a few seconds for this program to close, then removes its folder.
+        // CREATE_NO_WINDOW only: with DETACHED_PROCESS as well, Windows ignores CREATE_NO_WINDOW,
+        // cmd has no console, and the ping it starts opens a visible console window of its own.
         auto cmd = "cmd.exe /c ping 127.0.0.1 -n 4 > nul & rmdir /s /q " + folder.getFullPathName().quoted()
                  + " & rmdir " + folder.getParentDirectory().getFullPathName().quoted();
         STARTUPINFOW si {};
@@ -59,7 +61,7 @@ namespace setup::platform
         si.wShowWindow = SW_HIDE;
         PROCESS_INFORMATION pi {};
         std::wstring line (cmd.toWideCharPointer());
-        if (CreateProcessW (nullptr, line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW | DETACHED_PROCESS,
+        if (CreateProcessW (nullptr, line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
                             nullptr, juce::File::getSpecialLocation (juce::File::tempDirectory).getFullPathName().toWideCharPointer(), &si, &pi))
         {
             CloseHandle (pi.hThread);

@@ -7,7 +7,7 @@ encore-studio do not apply here; this file does.
 ## Decisions (already made, don't revisit)
 
 - Licence: GNU AGPLv3 (`LICENSE`). Copyright holder: Encore Music, Inc.
-- The repo will be public. Outside contributions are not accepted
+- The repo is public. Outside contributions are not accepted
   (`CONTRIBUTING.md`). The ENCORE. name and logo are not licensed (`TRADEMARKS.md`).
 - Contact: support@encoremusic.studio
 - Always write ENCORE. (capitals and the period) in anything people read, and

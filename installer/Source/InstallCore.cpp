@@ -114,7 +114,7 @@ namespace setup
         const auto quoted = exe.getFullPathName().quoted();
         juce::WindowsRegistry::setValue (key + "DisplayName", "ENCORE. VST");
         juce::WindowsRegistry::setValue (key + "DisplayVersion", o.version);
-        juce::WindowsRegistry::setValue (key + "Publisher", "ENCORE. Music");
+        juce::WindowsRegistry::setValue (key + "Publisher", "Encore Music, Inc.");
         juce::WindowsRegistry::setValue (key + "DisplayIcon", exe.getFullPathName() + ",0");
         juce::WindowsRegistry::setValue (key + "InstallLocation", o.vst3Dir.getFullPathName());
         juce::WindowsRegistry::setValue (key + "UninstallString", quoted + " --uninstall");
