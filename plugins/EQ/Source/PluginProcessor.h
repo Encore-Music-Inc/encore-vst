@@ -48,7 +48,7 @@ public:
     double getRate() const { return rate.load(); }
 
     juce::AudioProcessorValueTreeState apvts;
-    vs::PresetManager presetManager { apvts, "Equalize", "EQ" };
+    vs::PresetManager presetManager { apvts, "Equalize" };
 
     // Audio -> UI: spectrum samples (mono) before and after the EQ
     struct Tap

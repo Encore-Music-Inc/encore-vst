@@ -11,7 +11,7 @@ Free audio plugins from ENCORE., for any DAW that loads VST3 (and LV2 on Linux):
 | **Strum** | Acoustic guitar fixer: Body (pickup to mic: Learn from a mic on the side-chain, or a generic curve), Boom, Squeak, Pick, Double, loudness-matched A/B |
 
 Every plugin has factory presets plus user presets
-(`Documents\Encore\<Plugin>\Presets\*.encorepreset` on Windows). The same
+(`Documents\ENCORE\<Plugin>\Presets\*.encorepreset` on Windows). The same
 plugins are built into ENCORE. Basement Studio.
 
 Copyright (c) Encore Music, Inc. Licensed under the GNU Affero General Public
@@ -28,7 +28,8 @@ Each release (under Releases on this repo) has:
   11 (64-bit). Tick the plugins you want. It isn't code-signed yet, so
   SmartScreen may warn you: click **More info**, then **Run anyway**. To add or
   remove plugins later, run it again or use **Modify** on ENCORE. VST in
-  Windows Settings > Apps. Your presets are never touched.
+  Windows Settings > Apps. **Uninstall** there removes all of them. Your presets
+  are never touched.
 - `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
   installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:
@@ -52,7 +53,7 @@ tests/                              plugin-level tests: presets, installer, edit
 external/JUCE                       JUCE 9 (submodule)
 external/encore-audio-processing    ENCORE.'s audio processing headers (submodule)
 build-and-install.ps1               Windows: build, test and install the VST3s on this PC
-Install Encore Plugins.cmd          double-click version of build-and-install.ps1
+Install ENCORE Plugins.cmd          double-click version of build-and-install.ps1
 ```
 
 ## Submodules and the include path
@@ -98,9 +99,7 @@ Visual Studio 2022 (or its Build Tools) with the C++ workload.
 .\build-and-install.ps1   # builds, runs the tests, installs the VST3s (asks for admin)
 ```
 
-Or double-click `Install Encore Plugins.cmd` (close Cubase first). It also
-removes old "Sick & Sad" copies of the plugins so Cubase doesn't list each one
-twice (the plugin IDs didn't change, so old projects open with the new names).
+Or double-click `Install ENCORE Plugins.cmd` (close Cubase first).
 
 To build the installer, `dist\ENCORE-VST-<version>-windows-setup.exe`:
 

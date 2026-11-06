@@ -3,7 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Theme.h"
 
-// Parameter-bound controls in the Encore style. Each one owns its label
+// Parameter-bound controls in the ENCORE. style. Each one owns its label
 // and its attachment, so an editor only has to create and position them.
 namespace vs
 {

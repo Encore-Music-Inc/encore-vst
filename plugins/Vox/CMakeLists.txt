@@ -1,11 +1,12 @@
 juce_add_plugin(Vox
-    COMPANY_NAME "Encore"
+    COMPANY_NAME "ENCORE."
     BUNDLE_ID com.encoremusic.vox
-    PLUGIN_MANUFACTURER_CODE SnSd
-    PLUGIN_CODE SsVx
+    PLUGIN_MANUFACTURER_CODE Encr
+    PLUGIN_CODE EnVx
     FORMATS ${ENCORE_PLUGIN_FORMATS}
     LV2URI "https://encoremusic.studio/plugins/vox"
-    PRODUCT_NAME "Encore Vox"
+    PRODUCT_NAME "ENCORE Vox"
+    PLUGIN_NAME "ENCORE. Vox"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

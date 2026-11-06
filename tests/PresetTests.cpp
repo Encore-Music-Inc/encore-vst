@@ -61,7 +61,7 @@ int main()
     expect ("loading a missing preset fails safely", ! pm.load ("does not exist"));
     expect ("delete removes it", pm.remove (juce::File::createLegalFileName ("My Lead / Take 2")) && pm.getUserPresets().isEmpty());
 
-    pm.getFolder().getParentDirectory().deleteRecursively(); // clean up Documents\Encore\_selftest
+    pm.getFolder().getParentDirectory().deleteRecursively(); // clean up Documents\ENCORE\_selftest
     std::printf ("\n%s: %d failure(s)\n", failures == 0 ? "ALL PASSED" : "FAILED", failures);
     return failures == 0 ? 0 : 1;
 }

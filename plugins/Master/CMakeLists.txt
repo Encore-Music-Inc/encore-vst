@@ -1,11 +1,12 @@
 juce_add_plugin(Master
-    COMPANY_NAME "Encore"
+    COMPANY_NAME "ENCORE."
     BUNDLE_ID com.encoremusic.master
-    PLUGIN_MANUFACTURER_CODE SnSd
-    PLUGIN_CODE SsMs
+    PLUGIN_MANUFACTURER_CODE Encr
+    PLUGIN_CODE EnMs
     FORMATS ${ENCORE_PLUGIN_FORMATS}
     LV2URI "https://encoremusic.studio/plugins/master"
-    PRODUCT_NAME "Encore Master"
+    PRODUCT_NAME "ENCORE Master"
+    PLUGIN_NAME "ENCORE. Master"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

@@ -38,11 +38,11 @@ Remove-Item -Recurse -Force $payload -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force "$payload\stage", "$payload\shots" | Out-Null
 
 $plugins = @(
-    @{ Dir = "Vox";    Target = "Vox";    Name = "Encore Vox";      Shot = "VOX"    },
-    @{ Dir = "Verb";   Target = "Verb";   Name = "Encore Verb";     Shot = "VERB"   },
-    @{ Dir = "EQ";     Target = "SnsEQ";  Name = "Encore Equalize"; Shot = "EQ"     },
-    @{ Dir = "Master"; Target = "Master"; Name = "Encore Master";   Shot = "MASTER" },
-    @{ Dir = "Strum";  Target = "Strum";  Name = "Encore Strum";    Shot = "STRUM"  }
+    @{ Dir = "Vox";    Target = "Vox";    Name = "ENCORE Vox";      Shot = "VOX"    },
+    @{ Dir = "Verb";   Target = "Verb";   Name = "ENCORE Verb";     Shot = "VERB"   },
+    @{ Dir = "EQ";     Target = "EQ";     Name = "ENCORE Equalize"; Shot = "EQ"     },
+    @{ Dir = "Master"; Target = "Master"; Name = "ENCORE Master";   Shot = "MASTER" },
+    @{ Dir = "Strum";  Target = "Strum";  Name = "ENCORE Strum";    Shot = "STRUM"  }
 )
 foreach ($p in $plugins) {
     Copy-Item -Recurse "$root\build\plugins\$($p.Dir)\$($p.Target)_artefacts\Release\VST3\$($p.Name).vst3" "$payload\stage\"

@@ -140,7 +140,7 @@ namespace
             }
             readInstalled();
             for (int i = 0; i < setup::numPlugins; ++i)
-                keep[(size_t) i] = a.uninstall ? false : true;   // a fresh install or a change starts with everything ticked
+                keep[(size_t) i] = ! a.uninstall;   // install or change: everything ticked; uninstall: everything goes
 
             addAndMakeVisible (primary);
             addAndMakeVisible (secondary);
@@ -166,11 +166,12 @@ namespace
         std::array<juce::Image, setup::numPlugins> shots;
         bool busy() const { return page == Page::working; }
         bool picking() const { return page == Page::choose || page == Page::inUse; }
+        bool removingAll() const { return args.uninstall; }   // Uninstall removes every plugin; picking some happens in Modify
         bool isOpen (int i) const { return page == Page::inUse && inUseNames.contains (juce::String ("ENCORE. ") + setup::plugins[(size_t) i].title); }
 
         void toggle (int i)
         {
-            if (! picking())
+            if (! picking() || removingAll())
                 return;
             keep[(size_t) i] = ! keep[(size_t) i];
             refresh();
@@ -209,7 +210,7 @@ namespace
                                  40, 206, 250, juce::Justification::topLeft, 3.0f);
 
             // the three steps
-            const char* steps[] = { "Choose", "Install", "Done" };
+            const char* steps[] = { args.uninstall ? "Confirm" : "Choose", args.uninstall ? "Remove" : "Install", "Done" };
             const int current = page == Page::choose ? 0 : page == Page::done ? 2 : 1;
             for (int s = 0; s < 3; ++s)
             {
@@ -274,7 +275,7 @@ namespace
             {
                 g.setColour (theme::dim);
                 g.setFont (vs::font (12.5f));
-                g.drawText ("Installs to " + opts.vst3Dir.getFullPathName(), 364, 648, 300, 18, juce::Justification::centredLeft);
+                g.drawText ((args.uninstall ? "Removes from " : "Installs to ") + opts.vst3Dir.getFullPathName(), 364, 648, 300, 18, juce::Justification::centredLeft);
             }
         }
 
@@ -437,19 +438,21 @@ namespace
             switch (page)
             {
                 case Page::choose:
-                    return args.uninstall ? "Tick any plugin you want to keep. The rest are removed. Your presets in Documents\\Encore stay."
+                    return args.uninstall ? "This removes all ENCORE. VST plugins from this PC. Your presets in Documents\\ENCORE stay. "
+                                            "To remove only some, open Settings, Apps, ENCORE. VST and choose Modify instead."
                                           : "Untick any you don't want. Run this again any time to add or remove one.";
                 case Page::working: return "This takes a few seconds.";
                 case Page::inUse:
                     return inUseNames.joinIntoString (", ") + (inUseNames.size() == 1 ? " is" : " are")
-                         + " open in a DAW, so Windows can't change " + (inUseNames.size() == 1 ? "it" : "them") + ". Close the DAW and press Try again, or untick " + (inUseNames.size() == 1 ? "it." : "them.");
+                         + " open in a DAW, so Windows can't change " + (inUseNames.size() == 1 ? "it" : "them") + ". Close the DAW and press Try again"
+                         + (args.uninstall ? juce::String (".") : ", or untick " + juce::String (inUseNames.size() == 1 ? "it." : "them."));
                 case Page::done: break;
             }
             for (auto s : status)
                 if (s == Status::inUse || s == Status::failed)
                     return "Some plugins couldn't be changed (see below). Close your DAW and run this again.";
             if (count (true) == 0)
-                return "ENCORE. VST is removed. Your presets in Documents\\Encore stay, in case you come back.";
+                return "ENCORE. VST is removed. Your presets in Documents\\ENCORE stay, in case you come back.";
             return "Open your DAW and scan for new plugins. In Cubase: Studio > VST Plug-in Manager, then Rescan. Most other DAWs scan when they start.";
         }
 
@@ -473,8 +476,9 @@ namespace
             if (choosing)
             {
                 const int add = count (true), remove = count (false);
-                if (add == 0 && remove == 0)      { primary.setText ("Pick a plugin"); primary.setEnabled (false); }
-                else if (add == 0)                primary.setText (args.uninstall && remove > 1 ? "Uninstall" : "Remove " + juce::String (remove));
+                if (add == 0 && remove == 0)      { primary.setText (args.uninstall ? "Nothing to remove" : "Pick a plugin"); primary.setEnabled (false); }
+                else if (args.uninstall)          primary.setText ("Remove all");
+                else if (add == 0)                primary.setText ("Remove " + juce::String (remove));
                 else                              primary.setText ("Install " + juce::String (add) + (add == 1 ? " plugin" : " plugins"));
             }
             else if (page == Page::working)       { primary.setText (count (true) == 0 ? "Removing" : "Installing"); primary.setEnabled (false); }
@@ -482,7 +486,7 @@ namespace
             else                                  primary.setText ("Finish");
 
             for (auto& c : cards)
-                c->setMouseCursor (picking() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+                c->setMouseCursor (picking() && ! removingAll() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
             repaint();
         }
 
@@ -574,7 +578,7 @@ namespace
         const auto r = getLocalBounds().toFloat().reduced (0.5f);
         const bool choosing = owner.picking();
         const bool on = owner.keep[(size_t) index];
-        const bool hot = choosing && isMouseOver();
+        const bool hot = choosing && ! owner.removingAll() && isMouseOver();
         const auto& p = setup::plugins[(size_t) index];
 
         g.setColour (hot ? theme::panel.brighter (0.05f) : theme::panel);
@@ -620,6 +624,8 @@ namespace
 
         // right: the checkbox, or how it went
         const auto box = juce::Rectangle<float> (r.getRight() - 46.0f, r.getCentreY() - 13.0f, 26.0f, 26.0f);
+        if (choosing && owner.removingAll())
+            return;   // Uninstall: a plain list of what goes, no checkboxes
         if (choosing)
         {
             if (on)

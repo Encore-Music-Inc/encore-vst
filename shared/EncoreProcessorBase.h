@@ -1,9 +1,9 @@
 #pragma once
 
-// Every Encore plugin's processor derives from EncoreProcessorBase.
+// Every ENCORE. plugin's processor derives from EncoreProcessorBase.
 //
 // Built as a VST3 (this repo) it's just juce::AudioProcessor. Built into
-// Encore: Basement (BASEMENT_BUILTIN=1) it's a juce::AudioPluginInstance, so
+// ENCORE. Basement Studio (BASEMENT_BUILTIN=1) it's a juce::AudioPluginInstance, so
 // Basement can host the processor directly, with its parameters, automation
 // and saved state, without loading a VST3 at all.
 
@@ -17,12 +17,12 @@ struct EncoreProcessorBase : public juce::AudioPluginInstance
     void fillInPluginDescription (juce::PluginDescription& d) const override
     {
         d.name = d.descriptiveName = getName();
-        d.pluginFormatName = "Encore";
+        d.pluginFormatName = "Encore";   // the plugin format Basement Studio registers its built-in plugins under; must match Basement Studio
         d.category = "Effect";
-        d.manufacturerName = "Encore";
+        d.manufacturerName = "ENCORE.";
         d.version = "1.0";
         // the same identifier Basement lists the plugin under ("encore:vox", "encore:equalize"...)
-        d.fileOrIdentifier = "encore:" + getName().fromFirstOccurrenceOf ("Encore ", false, false).toLowerCase();
+        d.fileOrIdentifier = "encore:" + getName().fromFirstOccurrenceOf ("ENCORE. ", false, false).toLowerCase();
         d.uniqueId = d.deprecatedUid = d.fileOrIdentifier.hashCode();
         d.isInstrument = false;
         d.numInputChannels = d.numOutputChannels = 2;

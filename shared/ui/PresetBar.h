@@ -22,7 +22,7 @@ namespace vs
             folderBtn.onClick = [this] { pm.getFolder().startAsProcess(); };
             saveBtn.setTooltip ("Save the current settings as your own preset");
             deleteBtn.setTooltip ("Delete the selected user preset");
-            folderBtn.setTooltip ("Open the presets folder (to back up or share .snspreset files)");
+            folderBtn.setTooltip ("Open the presets folder (to back up or share .encorepreset files)");
 
             for (auto* c : std::initializer_list<juce::Component*> { &combo, &saveBtn, &deleteBtn, &folderBtn })
                 addAndMakeVisible (c);

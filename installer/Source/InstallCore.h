@@ -12,8 +12,7 @@ namespace setup
     struct PluginInfo
     {
         const char* title;    // what people see: "VOX"
-        const char* bundle;   // the VST3 bundle's name, without ".vst3": "Encore Vox"
-        const char* legacy;   // its name before the rename ("Sick & Sad Vox"), removed so hosts don't list it twice
+        const char* bundle;   // the VST3 bundle's name, without ".vst3": "ENCORE Vox"
         const char* blurb;    // one line on the card
         const char* shot;     // the resource holding its screenshot
     };
