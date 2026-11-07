@@ -1,0 +1,14 @@
+# Proposes updates to the GitHub Actions in .github/workflows (they are pinned to
+# commits), once a month, in one pull request. The submodules (JUCE,
+# encore-audio-processing) are moved by hand, on purpose.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: CI

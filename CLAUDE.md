@@ -35,7 +35,8 @@ their Windows and Mac installers and their tests.
 | `external/JUCE` | JUCE 9 submodule pinned at `7ff644f` |
 | `external/encore-audio-processing` | the audio processing headers, submodule pinned at tag `v1.0.0` |
 | `build-and-install.ps1`, `Install ENCORE Plugins.cmd` | Windows: build, test and install locally |
-| `.github/workflows/ci.yml` | pull requests: Linux x64 (VST3) and tests; main and manual runs: Windows x64 with the installer, macOS universal with the .pkg, Linux x64 and arm64, as artifacts; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
+| `.github/workflows/ci.yml` | pull requests: Linux x64, Windows x64 and macOS (Apple Silicon), build, tests and pluginval, no packaging; main and manual runs: Windows x64 with the installer, macOS universal with the .pkg, Linux x64 and arm64, as artifacts; weekly: strictest pluginval and sanitizers; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
+| `tests/pluginval.sh` | runs pluginval on the plugins (CI uses it on Linux and macOS) |
 
 ## Submodules
 
@@ -52,6 +53,8 @@ their Windows and Mac installers and their tests.
 
 ## Building and testing
 
+- Actions in `ci.yml` are pinned to commits (version in a comment); Dependabot
+  proposes updates. Keep new ones pinned the same way.
 - Keep builds fast: Ninja, ccache/sccache in CI, no full LTO (`ENCORE_LTO` is
   OFF; THIN is ThinLTO/incremental LTCG), and tests link the plugins' own
   libraries (`encore_plugin_test` in `CMakeLists.txt`) instead of compiling JUCE again.
