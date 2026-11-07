@@ -155,19 +155,24 @@ jobs:
       CCACHE_COMPRESS: 'true'
       CCACHE_MAXSIZE: 2G
     steps:
-      # Submodules: depth 1 and not recursive (submodules: true, not 'recursive'):
-      # encore-audio-processing's own external/JUCE is for its tests only.
+      # Submodules: depth 1 and not recursive (submodules: true, not 'recursive');
+      # JUCE is fetched through encore-audio-processing in the next step.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 1
           persist-credentials: false
+      # JUCE comes from encore-audio-processing (the JUCE version for all of
+      # ENCORE.): that one folder, not recursive
+      - name: JUCE (through encore-audio-processing)
+        shell: bash
+        run: git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
       - name: Cache key
         id: key
         run: |
-          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "juce=$(git -C external/encore-audio-processing rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
       # The cache is keyed on OS and architecture, compiler and the JUCE pin; each
       # run saves a new one and the next run starts from the newest
@@ -257,6 +262,11 @@ jobs:
           submodules: true
           fetch-depth: 1
           persist-credentials: false
+      # JUCE comes from encore-audio-processing (the JUCE version for all of
+      # ENCORE.): that one folder, not recursive
+      - name: JUCE (through encore-audio-processing)
+        shell: bash
+        run: git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
       - name: MSVC environment (for Ninja)
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
@@ -273,7 +283,7 @@ jobs:
         id: key
         shell: bash
         run: |
-          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "juce=$(git -C external/encore-audio-processing rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=msvc-$VCToolsVersion" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -391,12 +401,17 @@ jobs:
           submodules: true
           fetch-depth: 1
           persist-credentials: false
+      # JUCE comes from encore-audio-processing (the JUCE version for all of
+      # ENCORE.): that one folder, not recursive
+      - name: JUCE (through encore-audio-processing)
+        shell: bash
+        run: git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
       - name: Install Ninja and ccache
         run: brew install ninja ccache
       - name: Cache key
         id: key
         run: |
-          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "juce=$(git -C external/encore-audio-processing rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=xcode-$(xcodebuild -version | head -n 1 | tr -cd '0-9.')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -526,12 +541,17 @@ jobs:
           submodules: true
           fetch-depth: 1
           persist-credentials: false
+      # JUCE comes from encore-audio-processing (the JUCE version for all of
+      # ENCORE.): that one folder, not recursive
+      - name: JUCE (through encore-audio-processing)
+        shell: bash
+        run: git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
       - name: Cache key
         id: key
         run: |
-          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "juce=$(git -C external/encore-audio-processing rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -567,12 +587,30 @@ jobs:
           xvfb-run -a ctest --test-dir build --output-on-failure || code=$?
           bash .github/sanitizers/report.sh "$reports" "$code"
 
+  # Every pin is a published release (or a listed exception): the README's
+  # Pinned releases table against what each folder is pinned to, including
+  # what encore-audio-processing pins (JUCE). Runs on every pull request and
+  # push, docs-only ones too: it reads the README.
+  pins:
+    name: Pinned releases
+    needs: changes
+    if: needs.changes.outputs.kind != 'release'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Check the pins
+        run: bash .github/pins/check.sh
+
   # The one check to require on main. It fails if any build or test job failed or
   # was cancelled, and passes when they passed or were skipped (docs-only changes).
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, linux, windows, macos, sanitizers]
+    needs: [changes, pins, linux, windows, macos, sanitizers]
     runs-on: ubuntu-24.04
     steps:
       - name: Check the build and test jobs

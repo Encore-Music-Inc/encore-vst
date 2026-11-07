@@ -15,11 +15,13 @@ if (-not (Test-Path $cmake)) { $cmake = (Get-Command cmake -ErrorAction Stop).So
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
-# The submodules (JUCE and the audio processing code). Not --recursive:
-# encore-audio-processing's own external/JUCE is only for its own tests.
-if (-not (Test-Path "external\JUCE\CMakeLists.txt") -or -not (Test-Path "external\encore-audio-processing\dsp\MasterChain.h")) {
-    git submodule update --init external/JUCE external/encore-audio-processing
+# The audio processing code and the JUCE it pins (the JUCE version for all of
+# ENCORE.), fetched by path, not --recursive
+if (-not (Test-Path "external\encore-audio-processing\dsp\MasterChain.h") -or -not (Test-Path "external\encore-audio-processing\external\JUCE\CMakeLists.txt")) {
+    git submodule update --init --depth 1 external/encore-audio-processing
     if ($LASTEXITCODE -ne 0) { throw "git submodule update failed" }
+    git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
+    if ($LASTEXITCODE -ne 0) { throw "git submodule update failed (JUCE)" }
 }
 function Run($what) { & $what[0] $what[1..($what.Count - 1)]; if ($LASTEXITCODE -ne 0) { throw "Failed: $what" } }
 

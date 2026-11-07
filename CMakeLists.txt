@@ -11,23 +11,24 @@ project(EncorePlugins VERSION 0.6.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Submodules. Initialise them without --recursive: encore-audio-processing has
-# its own external/JUCE, which is only for its own tests.
-foreach(sub JUCE encore-audio-processing)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/${sub}/CMakeLists.txt"
-       AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/${sub}/dsp/MasterChain.h")
-        message(FATAL_ERROR "external/${sub} is missing. Run:\n"
-            "  git submodule update --init external/JUCE external/encore-audio-processing\n"
-            "(not --recursive)")
-    endif()
-endforeach()
+# The one submodule, encore-audio-processing, and the JUCE it pins: its
+# external/JUCE is the JUCE version for all of ENCORE., so the plugins build
+# with the JUCE the audio processing tests run on. Fetch both by path, not
+# --recursive.
+set(ENCORE_AUDIO_PROCESSING_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/encore-audio-processing)
+set(ENCORE_JUCE_DIR ${ENCORE_AUDIO_PROCESSING_DIR}/external/JUCE)
+if(NOT EXISTS "${ENCORE_AUDIO_PROCESSING_DIR}/dsp/MasterChain.h" OR NOT EXISTS "${ENCORE_JUCE_DIR}/CMakeLists.txt")
+    message(FATAL_ERROR "external/encore-audio-processing or its JUCE is missing. Run:\n"
+        "  git submodule update --init --depth 1 external/encore-audio-processing\n"
+        "  git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE\n"
+        "(not --recursive)")
+endif()
 
-add_subdirectory(external/JUCE)
+add_subdirectory(${ENCORE_JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
 
 # Include path for the plugins: shared/ for "ui/..." and "EncoreProcessorBase.h",
 # and the encore-audio-processing root for "dsp/...".
 set(ENCORE_SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared)
-set(ENCORE_AUDIO_PROCESSING_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/encore-audio-processing)
 set(ENCORE_INCLUDE_DIRS ${ENCORE_SHARED_DIR} ${ENCORE_AUDIO_PROCESSING_DIR})
 
 # Plugin formats. The default is VST3 + Standalone everywhere, plus AU on Mac
