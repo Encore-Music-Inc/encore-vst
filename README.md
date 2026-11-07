@@ -79,7 +79,7 @@ pinned to (`.github/pins/check.sh`).
 | Folder | Repository | Release |
 |---|---|---|
 | `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v1.0.1` |
-| `external/encore-audio-processing/external/JUCE` | [JUCE](https://github.com/juce-framework/JUCE) (through encore-audio-processing; bundles the VST3 SDK, MIT) | `9.0.5` |
+| `external/encore-audio-processing/external/JUCE` | [JUCE](https://github.com/juce-framework/JUCE), pinned by encore-audio-processing (shown, not pinned here; bundles the VST3 SDK, MIT) | `9.0.5` |
 <!-- pinned-releases:end -->
 
 `CMakeLists.txt` puts `shared/` and `external/encore-audio-processing` on every
@@ -268,14 +268,15 @@ change it on `main` (through a pull request) before releasing. CI refuses a
 tag that doesn't match it.
 
 A person at Encore Music, Inc. creates each release in GitHub: Releases, Draft
-a new release, choose a new tag `vX.Y.Z` on `main`, Publish. The tag starts CI,
-which doesn't rebuild: it takes the files from the successful `main` build of
-that exact commit (the Windows installer and VST3 zip, the Linux x64 and arm64
-archives, each with a `.sha256` file) and attaches them to the Release. If that
+a new release, a new tag `vX.Y.Z` on `main`, titled "ENCORE. VST vX.Y.Z", with
+the notes from the release pull request, Publish. The tag starts CI, which
+doesn't rebuild: it takes the files from the successful `main` build of that
+exact commit (the Windows installer and VST3 zip, the Mac .pkg and zip, the
+Linux x64 and arm64 archives, each with a `.sha256` file) and attaches them to
+the Release. If that
 commit has no successful `main` build (it's still running, or the push only
 changed docs and skipped the builds), the release job fails and says so: run CI
 by hand on `main` (Actions, CI, Run workflow), then re-run the release job.
 Workflow artifacts are kept for 90 days, so release a commit within that time.
 
-Version 0.4.0 and earlier were published from a different repository; their
-release is kept here as it was.
+Versions before 0.5.0 were published from a different repository.

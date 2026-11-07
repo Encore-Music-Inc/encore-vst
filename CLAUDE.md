@@ -33,6 +33,8 @@ their Windows and Mac installers and their tests.
 | `installer/` | ENCORE. VST Setup (Windows) and `package.ps1`, which builds it; `macos/package.sh`, the Mac .pkg and zip |
 | `tests/` | PresetTests, SetupTests, EditorShot (the Shot<Name> targets), MasterBench (Master's CPU use, `-DENCORE_VST_BENCH=ON`) |
 | `external/encore-audio-processing` | the audio processing headers, pinned to release `v1.0.1`; its `external/JUCE` (release `9.0.5`) is the JUCE the plugins build with |
+| `CHANGELOG.md` | every release's notes, newest first; the release job copies the version's section onto the GitHub release |
+| `.github/release-notes.sh` | prints a version's notes from `CHANGELOG.md`, and fails if they're missing (CI runs it on every build) |
 | `.github/pins/check.sh` | CI's check that every pin is a release (the README's Pinned releases table) |
 | `build-and-install.ps1`, `Install ENCORE Plugins.cmd` | Windows: build, test and install locally |
 | `.github/workflows/ci.yml` | pull requests: Linux x64, Windows x64 and macOS (Apple Silicon), build, tests and pluginval, no packaging; main and manual runs: Windows x64 with the installer, macOS universal with the .pkg, Linux x64 and arm64, as artifacts; weekly: strictest pluginval and sanitizers; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
@@ -111,15 +113,21 @@ Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by i
 1. The version lives in exactly one place: `project(EncorePlugins VERSION x.y.z)`
    in `CMakeLists.txt`.
 2. Changing it is its own small pull request ("Release vX.Y.Z"), so a person sees the
-   number before it's built.
+   number before it's built. It adds the release notes to `CHANGELOG.md` (see
+   Release notes below); CI fails until they're there.
 3. Merging builds everything on `main`: the tests run, and the Windows installer and
    VST3 zip, the Mac .pkg and zip, and the Linux x64 and arm64 archives are uploaded
    as workflow artifacts.
-4. A person publishes the release in GitHub (Releases, Draft a new release, a new tag
-   `vX.Y.Z` on that `main` commit, Publish). Never a Claude session.
+4. After the `main` build of that commit has passed, a person publishes the release in
+   GitHub. Never a Claude session. Releases, Draft a new release; tag `vX.Y.Z` (Create
+   new tag) with target `main` at the "Release vX.Y.Z" commit; leave the title and the
+   description empty, don't click Generate release notes and don't attach files (the
+   release job fills all of them in); Publish. Never publish an old draft release:
+   publishing creates its tag on whatever its target is at that moment.
 5. The tag's CI run doesn't rebuild. It checks that the tag matches the version, finds
    the successful `main` build of that exact commit and attaches its files, each with a
-   `.sha256` file, to the Release. If either check fails, nothing is attached.
+   `.sha256` file, to the Release, and sets its title (`ENCORE. VST vX.Y.Z`) and notes (the
+   version's section of `CHANGELOG.md`). If either check fails, nothing is attached.
    If that commit was docs-only (its build was skipped), run CI by hand on `main`
    (Actions, CI, Run workflow) and then re-run the release job.
 
@@ -130,6 +138,36 @@ Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by i
   them to publish it.
 - Tags `v*` are protected: they can't be moved or deleted (an org admin can, in an
   emergency).
+
+## Release notes
+
+Every release's notes use this format, so they read the same in every ENCORE.
+repository:
+
+```
+<One or two sentences: what this release is.>
+
+### What's new        (a repository's first release: "What's in it")
+### Downloads         (the files attached, and what each is for)
+### Built on          (exactly what the Pinned releases table pinned for this release)
+
+Questions or problems: support@encoremusic.studio
+```
+
+- The title is `ENCORE. VST vX.Y.Z`; the tag stays `vX.Y.Z`.
+- The notes describe the release as it is on the day it's published: no links
+  to or mentions of later releases, and no promises ("coming soon", "will
+  support"). If a limitation matters to people, state the limitation, not a plan.
+- They live in `CHANGELOG.md`, newest first, one `## vX.Y.Z` section each,
+  written once, in plain language, in the "Release vX.Y.Z" pull request. CI
+  (`.github/release-notes.sh`) fails while the version has no section, or the
+  section has no Downloads, Built on or Questions line. The release job copies
+  the section onto the GitHub release, so nobody pastes notes.
+- A published section isn't edited except to fix a factual error. Then fix it
+  in a pull request and make the same fix on the GitHub release (Edit), so the
+  two stay the same.
+- "Built on" names each top-level pin's release, and what it brings in
+  brackets when that matters to people (for example the JUCE version).
 
 ## Changes
 
