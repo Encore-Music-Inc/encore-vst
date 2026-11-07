@@ -502,6 +502,11 @@ jobs:
   # Weekly: the tests built with AddressSanitizer and UndefinedBehaviorSanitizer,
   # which catch memory errors and undefined behaviour (the kind of bug that
   # crashes a DAW) that plain tests miss. Two to three times slower, so weekly.
+  #
+  # Undefined behaviour is reported and the tests carry on, so one run lists
+  # every finding; the job then fails if there were any. A memory error stops
+  # at once (after one, memory may be corrupt and later results can't be
+  # trusted). Exceptions: .github/sanitizers/ubsan.supp, each with its reason.
   sanitizers:
     name: Sanitizers (Linux x64)
     needs: changes
@@ -515,7 +520,6 @@ jobs:
       CCACHE_MAXSIZE: 2G
       # Leak checking is off: fontconfig and X11 keep memory until exit by design
       ASAN_OPTIONS: detect_leaks=0:abort_on_error=1:strict_string_checks=1
-      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -539,8 +543,8 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DENCORE_PLUGIN_FORMATS=VST3
-          "-DCMAKE_C_FLAGS=-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
-          "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
+          "-DCMAKE_C_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer"
+          "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer"
           "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined"
           "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined"
           "-DCMAKE_MODULE_LINKER_FLAGS=-fsanitize=address,undefined"
@@ -555,7 +559,13 @@ jobs:
           path: .ccache
           key: ccache-sanitizers-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
       - name: Test
-        run: xvfb-run -a ctest --test-dir build --output-on-failure
+        run: |
+          reports="$RUNNER_TEMP/ubsan"
+          mkdir -p "$reports"
+          export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:report_error_type=1:suppressions=$GITHUB_WORKSPACE/.github/sanitizers/ubsan.supp:log_path=$reports/report"
+          code=0
+          xvfb-run -a ctest --test-dir build --output-on-failure || code=$?
+          bash .github/sanitizers/report.sh "$reports" "$code"
 
   # The one check to require on main. It fails if any build or test job failed or
   # was cancelled, and passes when they passed or were skipped (docs-only changes).

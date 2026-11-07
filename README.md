@@ -189,7 +189,7 @@ tags, plus pull requests, manual runs and a weekly run).
 |---|---|
 | Pull request | in parallel: Linux x64 (VST3), Windows x64 (VST3) and macOS on Apple Silicon (VST3 and AU): the build, the tests, and pluginval (strictness 5) on every plugin. No installers or zips |
 | Push to `main`, or a manual run | in parallel, the release files: Windows x64 (VST3, ENCORE. VST Setup), macOS universal (VST3, AU, the .pkg and zip; the .pkg is installed on the runner and each Audio Unit checked with `auval`), Linux x64 and Linux arm64 (VST3, LV2). Each with the tests and pluginval. The files are kept as workflow artifacts |
-| Every Monday, or a manual run with `checks: weekly` | the pull request checks with pluginval at strictness 10, and the tests built with AddressSanitizer and UndefinedBehaviorSanitizer on Linux x64 (memory errors and undefined behaviour). A failure shows as a red run under Actions |
+| Every Monday, or a manual run with `checks: weekly` | the pull request checks with pluginval at strictness 10, and the tests built with AddressSanitizer and UndefinedBehaviorSanitizer on Linux x64 (memory errors and undefined behaviour). Undefined behaviour is reported and the tests carry on, so one run lists every finding; a memory error stops it. Exceptions, each with its reason, go in `.github/sanitizers/ubsan.supp` (none today). A failure shows as a red run under Actions |
 | `v*` tag | no build: the files from the successful `main` build of the tag's commit are attached to the Release |
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
