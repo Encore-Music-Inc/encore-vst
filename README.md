@@ -173,20 +173,34 @@ editor shots open the plugins' editors.
 The other audio processing suites (pitch, reverb, EQ, mastering, the build
 without JUCE) live in encore-audio-processing and run there.
 
+CI also runs [pluginval](https://github.com/Tracktion/pluginval), Tracktion's
+plugin validator, on every plugin: it loads each one the way a DAW does and
+checks state save and restore, parameters, odd buffer sizes and sample rates,
+opening and closing the editor, and threading. To run it yourself, download
+pluginval and run `tests/pluginval.sh <pluginval> 5 <plugin>...` (on Linux
+without a display, under `xvfb-run -a`).
+
 ## CI
 
 `.github/workflows/ci.yml`. Each push starts one run (push for `main` and `v*`
-tags, plus pull requests and manual runs).
+tags, plus pull requests, manual runs and a weekly run).
 
 | When | What runs |
 |---|---|
-| Pull request | Linux x64: the five plugins (VST3) and the tests |
-| Push to `main`, or a manual run | in parallel: Windows x64 (VST3, ENCORE. VST Setup and the tests), macOS universal (VST3, AU, the .pkg and zip, and the tests; the .pkg is installed on the runner and each Audio Unit checked with `auval`), Linux x64 and Linux arm64 (VST3, LV2 and the tests). The files are kept as workflow artifacts |
+| Pull request | in parallel: Linux x64 (VST3), Windows x64 (VST3) and macOS on Apple Silicon (VST3 and AU): the build, the tests, and pluginval (strictness 5) on every plugin. No installers or zips |
+| Push to `main`, or a manual run | in parallel, the release files: Windows x64 (VST3, ENCORE. VST Setup), macOS universal (VST3, AU, the .pkg and zip; the .pkg is installed on the runner and each Audio Unit checked with `auval`), Linux x64 and Linux arm64 (VST3, LV2). Each with the tests and pluginval. The files are kept as workflow artifacts |
+| Every Monday, or a manual run with `checks: weekly` | the pull request checks with pluginval at strictness 10, and the tests built with AddressSanitizer and UndefinedBehaviorSanitizer on Linux x64 (memory errors and undefined behaviour). A failure shows as a red run under Actions |
 | `v*` tag | no build: the files from the successful `main` build of the tag's commit are attached to the Release |
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
 - Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
+- Pull requests build the Mac plugins for Apple Silicon only (half the
+  compiling); `main` builds them universal.
+- Every action is pinned to a commit, with its version in a comment.
+  Dependabot proposes updates once a month (`.github/dependabot.yml`).
+- The editor screenshots and pluginval logs of every run are kept as the
+  `checks-*` artifacts.
 
 ### Build speed
 
