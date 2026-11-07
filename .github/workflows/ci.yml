@@ -425,6 +425,9 @@ jobs:
           key: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
       - name: Test
         run: ctest --test-dir build --output-on-failure
+      # macOS only opens Audio Units it has registered, so they are copied to the
+      # user's Components folder for the check and removed after it (the .pkg
+      # test below installs them system-wide)
       - name: pluginval (strictness ${{ needs.changes.outputs.strictness }})
         env:
           LEVEL: ${{ needs.changes.outputs.strictness }}
@@ -433,8 +436,20 @@ jobs:
           curl -sSfL -o "$RUNNER_TEMP/pluginval.zip" "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_macOS.zip"
           echo "$PLUGINVAL_SHA256_MACOS  $RUNNER_TEMP/pluginval.zip" | shasum -a 256 -c -
           ditto -x -k "$RUNNER_TEMP/pluginval.zip" "$RUNNER_TEMP/pluginval"
+          components="$HOME/Library/Audio/Plug-Ins/Components"
+          mkdir -p "$components"
+          aus=()
+          for c in build/plugins/*/*_artefacts/Release/AU/*.component; do
+            ditto "$c" "$components/$(basename "$c")"
+            aus+=("$components/$(basename "$c")")
+          done
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          code=0
           tests/pluginval.sh "$RUNNER_TEMP/pluginval/pluginval.app/Contents/MacOS/pluginval" "$LEVEL" \
-            build/plugins/*/*_artefacts/Release/VST3/*.vst3 build/plugins/*/*_artefacts/Release/AU/*.component
+            build/plugins/*/*_artefacts/Release/VST3/*.vst3 "${aus[@]}" || code=$?
+          rm -rf "${aus[@]}"
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          exit "$code"
       # Checks every plugin is universal, signs them ad hoc, builds the .pkg and the zip
       - name: Installer and zip (installer/macos/package.sh)
         if: needs.changes.outputs.kind == 'build'
