@@ -2,21 +2,38 @@ name: CI
 
 # One run per push: pull requests run on pull_request; main and v* tags run on push.
 #
-#   pull request          Linux x64: the five plugins (VST3) and the tests
+#   pull request          in parallel: Linux x64 (VST3), Windows x64 (VST3) and macOS
+#                         on Apple Silicon (VST3 and AU): build, the tests, and
+#                         pluginval on every plugin. No installers or zips
 #   push to main, manual  the release files, in parallel: Windows x64 (VST3, the
-#                         installer and the tests), macOS universal (VST3, AU, the
-#                         .pkg installer and the tests), Linux x64 and Linux arm64
-#                         (VST3, LV2 and the tests), uploaded as workflow artifacts
+#                         installer), macOS universal (VST3, AU, the .pkg, installed
+#                         on the runner and checked with auval), Linux x64 and
+#                         arm64 (VST3, LV2); each with the tests and pluginval, and
+#                         uploaded as workflow artifacts
+#   weekly (Monday), or   the pull request checks with pluginval at its strictest,
+#   manual with checks:   and the tests built with AddressSanitizer and
+#   weekly                UndefinedBehaviorSanitizer on Linux x64
 #   v* tag                no rebuild: the files from the successful main build of
 #                         the tag's commit are attached to the GitHub Release
 #
 # Docs-only changes skip the builds (see the changes job).
+#
+# Every action is pinned to a commit (the version is in the comment next to it);
+# Dependabot proposes updates (.github/dependabot.yml).
 on:
   push:
     branches: [main]
     tags: ['v*']
   pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
   workflow_dispatch:
+    inputs:
+      checks:
+        description: 'build: the release files, as on main. weekly: strictest pluginval and the sanitizers'
+        type: choice
+        options: [build, weekly]
+        default: build
 
 permissions:
   contents: read
@@ -24,7 +41,7 @@ permissions:
 # A newer push to the same pull request cancels the older run. Runs on main are
 # never cancelled: every main commit keeps its build, so it can be released.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -39,12 +56,17 @@ env:
   PLUGINS: Vox:Vox Verb:Verb EQ:EQ Master:Master Strum:Strum
   SCCACHE_VERSION: v0.10.0
   SCCACHE_SHA256: 6d8823b5c13e0dba776d88c537229256ecb2f01a1d775b507fd141cb55d30578
+  # pluginval (Tracktion's plugin validator, used in CI only, not shipped)
+  PLUGINVAL_VERSION: v1.0.4
+  PLUGINVAL_SHA256_LINUX: c01c49d8063965c4c2dea8324468336768f5c9139e0b1caebde14c2400b55352
+  PLUGINVAL_SHA256_MACOS: 3c4c533bda0c5059eea3ddaea752d757ee2025041f0f47e6bcb0e87f6082b29f
+  PLUGINVAL_SHA256_WINDOWS: c08e61ce3b96db41636f8ec7e76f4c7e2c13ebdac7fa1b5a1f52b4f32ec715ab
 
 jobs:
   # Decides what runs. A pull request or push that only touches docs (*.md,
   # LICENSE, .github/CODEOWNERS) skips the builds; skipped jobs count as passing,
-  # so docs-only pull requests stay mergeable when checks are required. Tags and
-  # manual runs always run what they need.
+  # so docs-only pull requests stay mergeable when checks are required. Tags,
+  # manual and weekly runs always run what they need.
   changes:
     name: What changed
     runs-on: ubuntu-24.04
@@ -52,41 +74,49 @@ jobs:
       code: ${{ steps.diff.outputs.code }}
       kind: ${{ steps.diff.outputs.kind }}
       linux: ${{ steps.diff.outputs.linux }}
+      strictness: ${{ steps.diff.outputs.strictness }}
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
+          CHECKS: ${{ inputs.checks }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          # kind: pr (Linux x64, VST3), build (all the release files), release (no build)
+          # kind: pr (checks only), build (all the release files), weekly (strictest
+          # checks and sanitizers), release (no build)
           if [[ "$REF" == refs/tags/v* ]]; then
             kind=release
           elif [[ "$EVENT" == "pull_request" ]]; then
             kind=pr
+          elif [[ "$EVENT" == "schedule" || "$CHECKS" == "weekly" ]]; then
+            kind=weekly
           else
             kind=build
           fi
           echo "kind=$kind" >> "$GITHUB_OUTPUT"
-          if [[ "$kind" == pr ]]; then
-            echo 'linux=[{"arch":"x64"}]' >> "$GITHUB_OUTPUT"
-          else
+          # pluginval strictness: 5 is the level hosts expect plugins to pass; 10 is the most thorough
+          if [[ "$kind" == weekly ]]; then echo "strictness=10" >> "$GITHUB_OUTPUT"; else echo "strictness=5" >> "$GITHUB_OUTPUT"; fi
+          if [[ "$kind" == build ]]; then
             echo 'linux=[{"arch":"x64"},{"arch":"arm64"}]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'linux=[{"arch":"x64"}]' >> "$GITHUB_OUTPUT"
           fi
           if [[ "$EVENT" == "pull_request" ]]; then
             files=$(git diff --name-only "$PR_BASE" "$PR_HEAD")
           elif [[ "$EVENT" == "push" && "$REF" == refs/heads/* && -n "$PUSH_BEFORE" && "$PUSH_BEFORE" != 0000000000000000000000000000000000000000 ]]; then
             files=$(git diff --name-only "$PUSH_BEFORE" "$SHA")
           else
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "Tag or manual run: everything it needs runs"; exit 0
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "Tag, manual or weekly run: everything it needs runs"; exit 0
           fi
           echo "Changed files:"; echo "$files"
           code=$(echo "$files" | grep -Ev '(\.md$|^LICENSE$|^\.github/CODEOWNERS$)' | grep -c . || true)
@@ -127,7 +157,7 @@ jobs:
     steps:
       # Submodules: depth 1 and not recursive (submodules: true, not 'recursive'):
       # encore-audio-processing's own external/JUCE is for its tests only.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 1
@@ -141,14 +171,14 @@ jobs:
           echo "compiler=gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
       # The cache is keyed on OS and architecture, compiler and the JUCE pin; each
       # run saves a new one and the next run starts from the newest
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
           restore-keys: ccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-
       - name: Configure
         env:
-          FORMATS: ${{ needs.changes.outputs.kind == 'pr' && 'VST3' || 'VST3;LV2' }}
+          FORMATS: ${{ needs.changes.outputs.kind == 'build' && 'VST3;LV2' || 'VST3' }}
         run: >
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -158,7 +188,7 @@ jobs:
           ccache -z
           cmake --build build --parallel "$(nproc)"
           ccache -s
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.key.outputs.juce != ''
         with:
           path: .ccache
@@ -166,6 +196,17 @@ jobs:
       # StrumTests and the editor shots open the plugins' editors, so they need an X display
       - name: Test
         run: xvfb-run -a ctest --test-dir build --output-on-failure
+      # pluginval has no Linux arm64 build; x64 covers the same code
+      - name: pluginval (strictness ${{ needs.changes.outputs.strictness }})
+        if: matrix.arch == 'x64'
+        env:
+          LEVEL: ${{ needs.changes.outputs.strictness }}
+        run: |
+          set -euo pipefail
+          curl -sSfL -o "$RUNNER_TEMP/pluginval.zip" "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_Linux.zip"
+          echo "$PLUGINVAL_SHA256_LINUX  $RUNNER_TEMP/pluginval.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/pluginval.zip" -d "$RUNNER_TEMP/pluginval"
+          xvfb-run -a tests/pluginval.sh "$RUNNER_TEMP/pluginval/pluginval" "$LEVEL" build/plugins/*/*_artefacts/Release/VST3/*.vst3
       - name: Package
         if: needs.changes.outputs.kind == 'build'
         env:
@@ -185,7 +226,7 @@ jobs:
           sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
           cat "$name.tar.gz.sha256"
           tar -tzf "$name.tar.gz"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.changes.outputs.kind == 'build'
         with:
           name: linux-${{ matrix.arch }}
@@ -193,29 +234,31 @@ jobs:
             ENCORE-VST-*-linux-*.tar.gz
             ENCORE-VST-*-linux-*.tar.gz.sha256
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: editor-shots-linux-${{ matrix.arch }}
-          path: build/shots/*.png
+          name: checks-linux-${{ matrix.arch }}
+          path: |
+            build/shots/*.png
+            pluginval-logs/
           if-no-files-found: ignore
 
   windows:
-    name: Windows x64 (VST3, installer and tests)
+    name: Windows x64
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind == 'build'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind != 'release'
     runs-on: windows-2022
     env:
       SCCACHE_DIR: ${{ github.workspace }}\.sccache
       SCCACHE_CACHE_SIZE: 2G
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 1
           persist-credentials: false
       - name: MSVC environment (for Ninja)
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: x64
       - name: Install sccache ${{ env.SCCACHE_VERSION }}
@@ -232,7 +275,7 @@ jobs:
         run: |
           echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=msvc-$VCToolsVersion" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .sccache
           key: sccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
@@ -245,20 +288,56 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_POLICY_DEFAULT_CMP0141=NEW -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded
           -DENCORE_PLUGIN_FORMATS=VST3
+      - name: Build and test
+        if: needs.changes.outputs.kind != 'build'
+        shell: pwsh
+        run: |
+          sccache --zero-stats
+          cmake --build build --parallel
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+          sccache --show-stats
+          ctest --test-dir build --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw "tests failed" }
       # Builds the plugins, runs PresetTests and StrumTests, draws each editor for
       # its card, builds ENCORE. VST Setup and runs SetupTests
       - name: Build, test and package (installer/package.ps1)
+        if: needs.changes.outputs.kind == 'build'
         shell: pwsh
         run: |
           sccache --zero-stats
           ./installer/package.ps1 -Generator Ninja
           sccache --show-stats
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.key.outputs.juce != ''
         with:
           path: .sccache
           key: sccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+      # pluginval is a Windows GUI program, so PowerShell starts it and waits for it
+      - name: pluginval (strictness ${{ needs.changes.outputs.strictness }})
+        shell: pwsh
+        env:
+          LEVEL: ${{ needs.changes.outputs.strictness }}
+        run: |
+          $zip = "$env:RUNNER_TEMP\pluginval.zip"
+          Invoke-WebRequest "https://github.com/Tracktion/pluginval/releases/download/$env:PLUGINVAL_VERSION/pluginval_Windows.zip" -OutFile $zip
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $env:PLUGINVAL_SHA256_WINDOWS) { throw "pluginval download does not match its SHA-256" }
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\pluginval"
+          New-Item -ItemType Directory -Force pluginval-logs | Out-Null
+          $failed = $false
+          foreach ($p in Get-ChildItem build/plugins/*/*_artefacts/Release/VST3/*.vst3) {
+            Write-Host "== pluginval (strictness $env:LEVEL): $($p.Name)"
+            $log = "pluginval-logs\$($p.Name).txt"
+            $pvArgs = @("--strictness-level", $env:LEVEL, "--validate-in-process", "--timeout-ms", "900000", "--validate", "`"$($p.FullName)`"")
+            $proc = Start-Process "$env:RUNNER_TEMP\pluginval\pluginval.exe" -ArgumentList $pvArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+            if ($proc.ExitCode -ne 0) {
+              Write-Host "::error::pluginval failed for $($p.Name)"
+              Get-Content $log, "$log.err" -Tail 60
+              $failed = $true
+            } else { Write-Host "   passed" }
+          }
+          if ($failed) { exit 1 }
       - name: VST3 zip and SHA-256
+        if: needs.changes.outputs.kind == 'build'
         shell: bash
         env:
           VERSION: ${{ needs.changes.outputs.version }}
@@ -278,7 +357,8 @@ jobs:
           sha256sum "$setup" > "$setup.sha256"
           sha256sum "$zip" > "$zip.sha256"
           cat *.sha256
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.changes.outputs.kind == 'build'
         with:
           name: windows-x64
           path: |
@@ -287,11 +367,17 @@ jobs:
             dist/ENCORE-VST-*-windows-x64-vst3.zip
             dist/ENCORE-VST-*-windows-x64-vst3.zip.sha256
           if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: checks-windows-x64
+          path: pluginval-logs/
+          if-no-files-found: ignore
 
   macos:
-    name: macOS (VST3, AU, installer and tests)
+    name: macOS
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind == 'build'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind != 'release'
     runs-on: macos-15
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -300,7 +386,7 @@ jobs:
       CCACHE_COMPRESS: 'true'
       CCACHE_MAXSIZE: 2G
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 1
@@ -312,16 +398,19 @@ jobs:
         run: |
           echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
           echo "compiler=xcode-$(xcodebuild -version | head -n 1 | tr -cd '0-9.')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
           restore-keys: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-
-      # One build for Apple Silicon and Intel Macs
+      # Release files are universal (Apple Silicon and Intel). Checks build for
+      # Apple Silicon only: half the compiling, and Intel-only bugs are rare.
       - name: Configure
+        env:
+          ARCHS: ${{ needs.changes.outputs.kind == 'build' && 'arm64;x86_64' || 'arm64' }}
         run: >
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          "-DCMAKE_OSX_ARCHITECTURES=$ARCHS"
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           "-DENCORE_PLUGIN_FORMATS=VST3;AU"
       - name: Build
@@ -329,21 +418,48 @@ jobs:
           ccache -z
           cmake --build build --parallel "$(sysctl -n hw.ncpu)"
           ccache -s
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.key.outputs.juce != ''
         with:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
       - name: Test
         run: ctest --test-dir build --output-on-failure
-      # Checks the plugins are universal, signs them ad hoc, builds the .pkg and the zip
+      # macOS only opens Audio Units it has registered, so they are copied to the
+      # user's Components folder for the check and removed after it (the .pkg
+      # test below installs them system-wide)
+      - name: pluginval (strictness ${{ needs.changes.outputs.strictness }})
+        env:
+          LEVEL: ${{ needs.changes.outputs.strictness }}
+        run: |
+          set -euo pipefail
+          curl -sSfL -o "$RUNNER_TEMP/pluginval.zip" "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_macOS.zip"
+          echo "$PLUGINVAL_SHA256_MACOS  $RUNNER_TEMP/pluginval.zip" | shasum -a 256 -c -
+          ditto -x -k "$RUNNER_TEMP/pluginval.zip" "$RUNNER_TEMP/pluginval"
+          components="$HOME/Library/Audio/Plug-Ins/Components"
+          mkdir -p "$components"
+          aus=()
+          for c in build/plugins/*/*_artefacts/Release/AU/*.component; do
+            ditto "$c" "$components/$(basename "$c")"
+            aus+=("$components/$(basename "$c")")
+          done
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          code=0
+          tests/pluginval.sh "$RUNNER_TEMP/pluginval/pluginval.app/Contents/MacOS/pluginval" "$LEVEL" \
+            build/plugins/*/*_artefacts/Release/VST3/*.vst3 "${aus[@]}" || code=$?
+          rm -rf "${aus[@]}"
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          exit "$code"
+      # Checks every plugin is universal, signs them ad hoc, builds the .pkg and the zip
       - name: Installer and zip (installer/macos/package.sh)
+        if: needs.changes.outputs.kind == 'build'
         env:
           VERSION: ${{ needs.changes.outputs.version }}
         run: installer/macos/package.sh "$VERSION"
       # Installs the .pkg the way a person would, then has macOS validate each
       # installed Audio Unit (auval) and checks each VST3 is in place
       - name: Install the .pkg and validate the Audio Units
+        if: needs.changes.outputs.kind == 'build'
         env:
           VERSION: ${{ needs.changes.outputs.version }}
         run: |
@@ -364,7 +480,8 @@ jobs:
             fi
             tail -3 "auval-$code.log"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.changes.outputs.kind == 'build'
         with:
           name: macos
           path: |
@@ -373,19 +490,79 @@ jobs:
             dist/ENCORE-VST-*-macos.zip
             dist/ENCORE-VST-*-macos.zip.sha256
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: editor-shots-macos
-          path: build/shots/*.png
+          name: checks-macos
+          path: |
+            build/shots/*.png
+            pluginval-logs/
           if-no-files-found: ignore
+
+  # Weekly: the tests built with AddressSanitizer and UndefinedBehaviorSanitizer,
+  # which catch memory errors and undefined behaviour (the kind of bug that
+  # crashes a DAW) that plain tests miss. Two to three times slower, so weekly.
+  sanitizers:
+    name: Sanitizers (Linux x64)
+    needs: changes
+    if: needs.changes.outputs.kind == 'weekly'
+    runs-on: ubuntu-24.04
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_NOHASHDIR: 'true'
+      CCACHE_COMPRESS: 'true'
+      CCACHE_MAXSIZE: 2G
+      # Leak checking is off: fontconfig and X11 keep memory until exit by design
+      ASAN_OPTIONS: detect_leaks=0:abort_on_error=1:strict_string_checks=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
+      - name: Cache key
+        id: key
+        run: |
+          echo "juce=$(git rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
+          echo "compiler=gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ccache-sanitizers-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+          restore-keys: ccache-sanitizers-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-
+      - name: Configure
+        run: >
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DENCORE_PLUGIN_FORMATS=VST3
+          "-DCMAKE_C_FLAGS=-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
+          "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
+          "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined"
+          "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined"
+          "-DCMAKE_MODULE_LINKER_FLAGS=-fsanitize=address,undefined"
+      - name: Build
+        run: |
+          ccache -z
+          cmake --build build --parallel "$(nproc)"
+          ccache -s
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.key.outputs.juce != ''
+        with:
+          path: .ccache
+          key: ccache-sanitizers-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+      - name: Test
+        run: xvfb-run -a ctest --test-dir build --output-on-failure
 
   # The one check to require on main. It fails if any build or test job failed or
   # was cancelled, and passes when they passed or were skipped (docs-only changes).
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, linux, windows, macos]
+    needs: [changes, linux, windows, macos, sanitizers]
     runs-on: ubuntu-24.04
     steps:
       - name: Check the build and test jobs
