@@ -6,25 +6,26 @@ below come from elsewhere and keep their own licences.
 
 ## ENCORE. audio processing
 
-- What: ENCORE.'s shared audio processing headers (`dsp/...`), release v1.0.0
+- What: ENCORE.'s shared audio processing headers (`dsp/...`), release v1.0.1
 - Where: git submodule at `external/encore-audio-processing`
   (https://github.com/Encore-Music-Inc/encore-audio-processing)
-- Licence: GNU AGPLv3, Copyright (c) Encore Music, Inc. Its own
-  `external/JUCE` submodule is for its tests only and is not used here.
+- Licence: GNU AGPLv3, Copyright (c) Encore Music, Inc. Its `external/JUCE`
+  submodule is the JUCE below.
 
 ## JUCE
 
-- What: the JUCE framework, version 9, at commit `7ff644f65d7daa1428c34b9738ebb5c449dc9172`
-- Where: git submodule at `external/JUCE` (https://github.com/juce-framework/JUCE)
+- What: the JUCE framework, release 9.0.5 (commit `d60b7a78030661574a615b586d9325ba7a7fa7dd`)
+- Where: `external/encore-audio-processing/external/JUCE`, pinned by encore-audio-processing
+  (https://github.com/juce-framework/JUCE)
 - Used by: every plugin, the tests and the Windows installer
 - Licence: dual licensed under the GNU AGPLv3 and the commercial JUCE 9
   licence. This repository uses JUCE under the AGPLv3. The full terms are in
-  `external/JUCE/LICENSE.md` once the submodule is checked out.
+  `external/encore-audio-processing/external/JUCE/LICENSE.md` once the submodule is checked out.
 
 ## Steinberg VST3 SDK
 
 - What: the VST3 SDK 3.8.0, bundled with JUCE
-  (`external/JUCE/modules/juce_audio_processors_headless/format_types/VST3_SDK`)
+  (`external/encore-audio-processing/external/JUCE/modules/juce_audio_processors_headless/format_types/VST3_SDK`)
 - Used by: the VST3 builds of the plugins
 - Licence: MIT. VST is a registered trademark of Steinberg Media Technologies GmbH.
 
@@ -44,7 +45,7 @@ zlib (Zlib), libpng (libpng-2.0), the IJG JPEG library (IJG), FLAC
 (BSD-3-Clause), Ogg and Vorbis (BSD-3-Clause), Opus (BSD-3-Clause), HarfBuzz
 (MIT), SheenBidi (Apache-2.0), PlutoVG and LunaSVG (MIT) and CHOC (ISC). The
 complete inventory, with versions, licences and locations, is JUCE's software
-bill of materials: `external/JUCE/JUCE.spdx.json`.
+bill of materials: `external/encore-audio-processing/external/JUCE/JUCE.spdx.json`.
 
 JUCE also ships the ASIO SDK and the AAX SDK (each GPLv3 or their vendor's
 licence). Neither is enabled in this build.

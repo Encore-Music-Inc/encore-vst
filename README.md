@@ -63,42 +63,79 @@ shared/ui/fonts/                    DM Sans and Space Mono (SIL OFL), built into
 installer/                          ENCORE. VST Setup, the Windows installer (package.ps1 builds it)
 installer/macos/package.sh          the Mac installer (.pkg) and zip
 tests/                              plugin-level tests: presets, installer, editor screenshots
-external/JUCE                       JUCE 9 (submodule)
-external/encore-audio-processing    ENCORE.'s audio processing headers (submodule)
+external/encore-audio-processing    ENCORE.'s audio processing headers (submodule), and the JUCE it pins
 build-and-install.ps1               Windows: build, test and install the VST3s on this PC
 Install ENCORE Plugins.cmd          double-click version of build-and-install.ps1
 ```
 
-## Submodules and the include path
+## Pinned releases
 
-Two submodules, both pinned:
+One pin: encore-audio-processing, at a published release. Its JUCE is the JUCE
+version for all of ENCORE., so the plugins build with the JUCE its tests run
+on. CI checks that each row is a release and is exactly what the folder is
+pinned to (`.github/pins/check.sh`).
 
-| Path | What | Pinned to |
+<!-- pinned-releases:start -->
+| Folder | Repository | Release |
 |---|---|---|
-| `external/JUCE` | JUCE 9 (bundles the VST3 SDK 3.8, MIT) | `7ff644f` |
-| `external/encore-audio-processing` | the audio processing headers (`dsp/...`) | tag `v1.0.0` |
+| `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v1.0.1` |
+| `external/encore-audio-processing/external/JUCE` | [JUCE](https://github.com/juce-framework/JUCE) (through encore-audio-processing; bundles the VST3 SDK, MIT) | `9.0.5` |
+<!-- pinned-releases:end -->
 
 `CMakeLists.txt` puts `shared/` and `external/encore-audio-processing` on every
 target's include path, so `#include "ui/Theme.h"` and `#include "dsp/MasterChain.h"`
-both resolve.
+both resolve, and builds JUCE from `external/encore-audio-processing/external/JUCE`.
 
-Initialise the submodules without `--recursive`. encore-audio-processing has
-its own `external/JUCE`, which is only for its own tests:
+Fetch the two folders by path, never with `--recursive`:
 
 ```bash
 git clone https://github.com/Encore-Music-Inc/encore-vst.git
 cd encore-vst
-git submodule update --init external/JUCE external/encore-audio-processing
+git submodule update --init --depth 1 external/encore-audio-processing
+git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
 ```
 
-To move to a new encore-audio-processing release, check out its tag in the
-submodule and commit the change in a pull request:
+To use a new encore-audio-processing release (and the JUCE it pins), check
+out its tag in the submodule, update the table above, and commit both in a
+pull request titled "Use encore-audio-processing vX.Y.Z (was vA.B.C)":
 
 ```bash
-git -C external/encore-audio-processing fetch --tags
+git -C external/encore-audio-processing fetch --depth 1 origin tag vX.Y.Z
 git -C external/encore-audio-processing checkout vX.Y.Z
-git add external/encore-audio-processing
+git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
+git add external/encore-audio-processing README.md
 ```
+
+## How ENCORE.'s repositories fit together
+
+```
+encore-audio-processing ──▶ JUCE                        (the JUCE version for all of ENCORE.)
+encore-vst              ──▶ encore-audio-processing     (brings JUCE with it)
+encore-basement-studio  ──▶ encore-vst                  (brings the sound engine and JUCE with it)
+                        ──▶ Tracktion Engine
+encore-os               ──▶ encore-vst and encore-basement-studio releases
+Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by its SHA-256
+```
+
+- Each repository pins each thing it uses in one place, and only to a
+  published release. The Pinned releases table in the README names them, and
+  CI (`.github/pins/check.sh`) checks that each one is a release and is exactly
+  what the folder is pinned to. An exception (no usable release exists) is
+  written in the table with its reason.
+- Nothing is pinned twice. A repository that uses encore-vst uses encore-vst's
+  sound engine and JUCE, never its own copy; one that uses
+  encore-audio-processing uses its JUCE.
+- Fetch pinned folders by their paths, one level at a time
+  (`git -C <folder> submodule update --init --depth 1 <path>`), never with
+  `--recursive`: some pinned repositories have test-only folders of their own.
+- Changes travel up one repository at a time, each through a release:
+  encore-audio-processing, then encore-vst, then encore-basement-studio, then
+  encore-os (Green Room beside them). A repository moves to a new release only
+  when something changes for its own users, and picks its own version number
+  by what its users notice, not by the number of what it uses.
+- Pull request titles: "Use <repository> vX.Y.Z (was vA.B.C)" in the repository
+  that moves a pin; "Release vX.Y.Z" only for the repository's own version.
+- After this repository publishes a release: encore-basement-studio opens "Use encore-vst vX.Y.Z" when its users should get the change (the plugins are built into it, and its Windows installer bundles this release's installer), and encore-os pins the new release for its next image.
 
 ## Building
 
