@@ -4,7 +4,7 @@ This repository's own code is Copyright (c) Encore Music, Inc. and licensed
 under the GNU Affero General Public License v3 (see `LICENSE`). The pieces
 below come from elsewhere and keep their own licences.
 
-## ENCORE. audio processing
+## ENCORE. Audio Processing (encore-audio-processing)
 
 - What: ENCORE.'s shared audio processing headers (`dsp/...`), release v1.0.1
 - Where: git submodule at `external/encore-audio-processing`

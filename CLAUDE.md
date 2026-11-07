@@ -111,12 +111,18 @@ Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by i
 1. The version lives in exactly one place: `project(EncorePlugins VERSION x.y.z)`
    in `CMakeLists.txt`.
 2. Changing it is its own small pull request ("Release vX.Y.Z"), so a person sees the
-   number before it's built.
+   number before it's built. It includes the release notes, ready to paste (see
+   Release notes below).
 3. Merging builds everything on `main`: the tests run, and the Windows installer and
    VST3 zip, the Mac .pkg and zip, and the Linux x64 and arm64 archives are uploaded
    as workflow artifacts.
-4. A person publishes the release in GitHub (Releases, Draft a new release, a new tag
-   `vX.Y.Z` on that `main` commit, Publish). Never a Claude session.
+4. After the `main` build of that commit has passed, a person publishes the release in
+   GitHub. Never a Claude session. Releases, Draft a new release; tag `vX.Y.Z` (Create
+   new tag) with target `main` at the "Release vX.Y.Z" commit; title `ENCORE. VST vX.Y.Z`;
+   paste the release notes from the pull request; leave Previous tag as it is, don't
+   click Generate release notes and don't attach files (the release job attaches
+   them); Publish. Never publish an old draft release: publishing creates its tag on
+   whatever its target is at that moment.
 5. The tag's CI run doesn't rebuild. It checks that the tag matches the version, finds
    the successful `main` build of that exact commit and attaches its files, each with a
    `.sha256` file, to the Release. If either check fails, nothing is attached.
@@ -130,6 +136,31 @@ Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by i
   them to publish it.
 - Tags `v*` are protected: they can't be moved or deleted (an org admin can, in an
   emergency).
+
+## Release notes
+
+Every release's notes use this format, so they read the same in every ENCORE.
+repository:
+
+```
+<One or two sentences: what this release is.>
+
+### What's new        (a repository's first release: "What's in it")
+### Downloads         (the files attached, and what each is for)
+### Built on          (exactly what the Pinned releases table pinned for this release)
+
+Questions or problems: support@encoremusic.studio
+```
+
+- The title is `ENCORE. VST vX.Y.Z`; the tag stays `vX.Y.Z`.
+- The notes describe the release as it is on the day it's published: no links
+  to or mentions of later releases, and no promises ("coming soon", "will
+  support"). If a limitation matters to people, state the limitation, not a plan.
+- They're written once, in plain language, in the "Release vX.Y.Z" pull
+  request (under "Release notes (paste when publishing)"), and not edited after
+  publishing except to fix a factual error.
+- "Built on" names each top-level pin's release, and what it brings in
+  brackets when that matters to people (for example the JUCE version).
 
 ## Changes
 
