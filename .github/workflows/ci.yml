@@ -47,6 +47,7 @@ concurrency:
 env:
   # Ubuntu packages JUCE 9 needs to build plugins on Linux
   LINUX_DEPS: >-
+    build-essential g++ cmake pkg-config curl unzip file binutils
     ninja-build ccache xvfb xauth
     libasound2-dev libjack-jackd2-dev ladspa-sdk
     libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev
@@ -154,8 +155,14 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.linux) }}
-    # arm64 runs on GitHub's native arm64 runner, never under emulation
+    # arm64 runs on GitHub's native arm64 runner, never under emulation. The build
+    # runs inside Debian 12 (Bookworm), the oldest system the plugins support, so
+    # they load on Raspberry Pi OS Bookworm, Debian 12, Ubuntu 22.04 and newer.
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    container: debian:bookworm
+    defaults:
+      run:
+        shell: bash
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
@@ -163,6 +170,13 @@ jobs:
       CCACHE_COMPRESS: 'true'
       CCACHE_MAXSIZE: 2G
     steps:
+      # git first, so checkout makes a real clone with submodules
+      - name: Install build dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates $LINUX_DEPS
+          git config --global --add safe.directory '*'
       # Submodules: depth 1 and not recursive (submodules: true, not 'recursive');
       # JUCE is fetched through encore-audio-processing in the next step.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -173,15 +187,12 @@ jobs:
       # JUCE comes from encore-audio-processing (the JUCE version for all of
       # ENCORE.): that one folder, not recursive
       - name: JUCE (through encore-audio-processing)
-        shell: bash
         run: git -C external/encore-audio-processing submodule update --init --depth 1 external/JUCE
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_DEPS
       - name: Cache key
         id: key
         run: |
           echo "juce=$(git -C external/encore-audio-processing rev-parse HEAD:external/JUCE)" >> "$GITHUB_OUTPUT"
-          echo "compiler=gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
+          echo "compiler=debian12-gcc-$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
       # The cache is keyed on OS and architecture, compiler and the JUCE pin; each
       # run saves a new one and the next run starts from the newest
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -206,6 +217,10 @@ jobs:
         with:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ steps.key.outputs.compiler }}-juce-${{ steps.key.outputs.juce }}-${{ github.run_id }}
+      # The plugins must load on Debian 12 / Raspberry Pi OS Bookworm: glibc 2.36 and
+      # GCC 12's libstdc++ (GLIBCXX 3.4.30). Fails if any plugin needs newer.
+      - name: Runs on Debian 12 (glibc and libstdc++ versions)
+        run: .github/linux-compat.sh build/plugins/*/*_artefacts/Release
       # StrumTests and the editor shots open the plugins' editors, so they need an X display
       - name: Test
         run: xvfb-run -a ctest --test-dir build --output-on-failure

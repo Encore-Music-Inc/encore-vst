@@ -46,8 +46,9 @@ Each release (under Releases on this repo) has:
   yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:
   VST3 and LV2 builds for 64-bit Linux on PCs and on Raspberry Pi (ENCORE. OS, or
-  64-bit Raspberry Pi OS on a Pi 4 or 5). Copy the `.vst3` folders to `~/.vst3`
-  and the `.lv2` folders to `~/.lv2`.
+  64-bit Raspberry Pi OS on a Pi 4 or 5). They run on Raspberry Pi OS Bookworm or
+  newer, Debian 12 or newer and Ubuntu 22.04 or newer. Copy the `.vst3` folders to
+  `~/.vst3` and the `.lv2` folders to `~/.lv2`.
 - A `.sha256` file next to each download.
 
 After installing, rescan plugins in your DAW (Cubase: Studio > VST Plug-in
@@ -231,7 +232,10 @@ tags, plus pull requests, manual runs and a weekly run).
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
-- Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
+- Linux builds inside Debian 12 (Bookworm), the oldest system the plugins
+  support, so they load on everything newer too; `.github/linux-compat.sh` fails
+  the build if a plugin needs a newer glibc or libstdc++ than Debian 12 has.
+  Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
 - Pull requests build the Mac plugins for Apple Silicon only (half the
   compiling); `main` builds them universal.
 - Every action is pinned to a commit, with its version in a comment.
