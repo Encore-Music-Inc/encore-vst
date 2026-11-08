@@ -18,7 +18,7 @@ plugins are built into ENCORE. Basement Studio.
 Copyright (c) Encore Music, Inc. Licensed under the GNU Affero General Public
 License v3 (see `LICENSE`). The ENCORE. name and logo are not licensed (see
 `TRADEMARKS.md`). Third-party code: `THIRD-PARTY-NOTICES.md`. Outside
-contributions are not accepted yet (see `CONTRIBUTING.md`).
+contributions are not accepted (see `CONTRIBUTING.md`).
 Contact: support@encoremusic.studio
 
 ## Downloads
@@ -26,7 +26,7 @@ Contact: support@encoremusic.studio
 Each release (under Releases on this repo) has:
 
 - `ENCORE-VST-<version>-windows-setup.exe`: ENCORE. VST Setup for Windows 10 and
-  11 (64-bit). Tick the plugins you want. It isn't code-signed yet, so
+  11 (64-bit). Tick the plugins you want. It isn't code-signed, so
   SmartScreen may warn you: click **More info**, then **Run anyway**. To add or
   remove plugins later, run it again or use **Modify** on ENCORE. VST in
   Windows Settings > Apps. **Uninstall** there removes all of them. Your presets
@@ -39,7 +39,7 @@ Each release (under Releases on this repo) has:
 - `ENCORE-VST-<version>-macos.pkg`: the Mac installer, for Apple Silicon and
   Intel Macs on macOS 11 or newer. It installs VST3 and Audio Units (for Logic
   and GarageBand); **Customize** lets you untick plugins. It isn't signed or
-  notarized yet, so the first time macOS says it was "Not Opened": click
+  notarized, so the first time macOS says it was "Not Opened": click
   **Done**, go to **System Settings > Privacy & Security**, scroll to Security
   and click **Open Anyway**, then open the installer again and click **Open
   Anyway**. To remove a plugin, delete it from `/Library/Audio/Plug-Ins/VST3`
@@ -111,40 +111,9 @@ git -C external/encore-audio-processing submodule update --init --depth 1 extern
 git add external/encore-audio-processing README.md
 ```
 
-## How ENCORE.'s repositories fit together
-
-```
-encore-audio-processing ──▶ JUCE                        (the JUCE version for all of ENCORE.)
-encore-vst              ──▶ encore-audio-processing     (brings JUCE with it)
-encore-basement-studio  ──▶ encore-vst                  (brings the sound engine and JUCE with it)
-                        ──▶ Tracktion Engine
-encore-os               ──▶ encore-vst and encore-basement-studio releases
-Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by its SHA-256
-```
-
-- Each repository pins each thing it uses in one place, and only to a
-  published release. The Pinned releases table in the README names them, and
-  CI (`.github/pins/check.sh`) checks that each one is a release and is exactly
-  what the folder is pinned to. An exception (no usable release exists) is
-  written in the table with its reason.
-- Nothing is pinned twice. A repository that uses encore-vst uses encore-vst's
-  sound engine and JUCE, never its own copy; one that uses
-  encore-audio-processing uses its JUCE.
-- Fetch pinned folders by their paths, one level at a time
-  (`git -C <folder> submodule update --init --depth 1 <path>`), never with
-  `--recursive`: some pinned repositories have test-only folders of their own.
-- Changes travel up one repository at a time, each through a release:
-  encore-audio-processing, then encore-vst, then encore-basement-studio, then
-  encore-os (Green Room beside them). A repository moves to a new release only
-  when something changes for its own users, and picks its own version number
-  by what its users notice, not by the number of what it uses.
-- Pull request titles: "Use <repository> vX.Y.Z (was vA.B.C)" in the repository
-  that moves a pin; "Release vX.Y.Z" only for the repository's own version.
-- After this repository publishes a release: encore-basement-studio opens "Use encore-vst vX.Y.Z" when its users should get the change (the plugins are built into it, and its Windows installer bundles this release's installer), and encore-os pins the new release for its next image.
-
 ## Building
 
-Needs CMake 3.22 or newer and a C++20 compiler.
+Needs CMake (the minimum is in `CMakeLists.txt`) and a C++20 compiler.
 
 ### Windows
 
@@ -191,7 +160,7 @@ installer/macos/package.sh <version>   # dist/ENCORE-VST-<version>-macos.pkg and
 
 `package.sh` checks every plugin is universal (Apple Silicon and Intel), signs
 them ad hoc (Apple Silicon won't load unsigned plugins) and builds the
-installer and the zip. Signing with a Developer ID and notarizing come later.
+installer and the zip. They aren't signed with a Developer ID or notarized.
 
 The plugins land in `build/plugins/<Name>/<Target>_artefacts/Release/`
 (`VST3/`, `LV2/`, `AU/`, `Standalone/`).
@@ -225,13 +194,13 @@ without a display, under `xvfb-run -a`).
 ## CI
 
 `.github/workflows/ci.yml`. Each push starts one run (push for `main` and `v*`
-tags, plus pull requests, manual runs and a weekly run).
+tags, plus pull requests, manual runs and a scheduled run).
 
 | When | What runs |
 |---|---|
-| Pull request | in parallel: Linux x64 (VST3), Windows x64 (VST3) and macOS on Apple Silicon (VST3 and AU): the build, the tests, and pluginval (strictness 5) on every plugin. No installers or zips |
+| Pull request | in parallel: Linux x64 (VST3), Windows x64 (VST3) and macOS on Apple Silicon (VST3 and AU): the build, the tests, and pluginval on every plugin. No installers or zips |
 | Push to `main`, or a manual run | in parallel, the release files: Windows x64 (VST3, ENCORE. VST Setup), macOS universal (VST3, AU, the .pkg and zip; the .pkg is installed on the runner and each Audio Unit checked with `auval`), Linux x64 and Linux arm64 (VST3, LV2). Each with the tests and pluginval. The files are kept as workflow artifacts |
-| Every Monday, or a manual run with `checks: weekly` | the pull request checks with pluginval at strictness 10, and the tests built with AddressSanitizer and UndefinedBehaviorSanitizer on Linux x64 (memory errors and undefined behaviour). Undefined behaviour is reported and the tests carry on, so one run lists every finding; a memory error stops it. Exceptions, each with its reason, go in `.github/sanitizers/ubsan.supp` (none today). A failure shows as a red run under Actions |
+| On the schedule in `ci.yml`, or a manual run with `checks: weekly` | the pull request checks with pluginval at its strictest, and the tests built with AddressSanitizer and UndefinedBehaviorSanitizer on Linux x64 (memory errors and undefined behaviour). Undefined behaviour is reported and the tests carry on, so one run lists every finding; a memory error stops it. Exceptions, each with its reason, go in `.github/sanitizers/ubsan.supp` (none today). A failure shows as a red run under Actions |
 | `v*` tag | no build: the files from the successful `main` build of the tag's commit are attached to the Release |
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
@@ -240,11 +209,11 @@ tags, plus pull requests, manual runs and a weekly run).
   support, so they load on everything newer too; `.github/linux-compat.sh` fails
   the build if a plugin needs a newer glibc or libstdc++ than Debian 12 has. The
   x64 plugins are then loaded with pluginval in a plain Ubuntu 22.04 as well.
-  Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
-- Pull requests build the Mac plugins for Apple Silicon only (half the
-  compiling); `main` builds them universal.
+  Linux arm64 builds on GitHub's native arm64 runner.
+- Pull requests build the Mac plugins for Apple Silicon only; `main` builds
+  them universal.
 - Every action is pinned to a commit, with its version in a comment.
-  Dependabot proposes updates once a month (`.github/dependabot.yml`).
+  Dependabot proposes updates (`.github/dependabot.yml`).
 - The editor screenshots and pluginval logs of every run are kept as the
   `checks-*` artifacts.
 
@@ -255,37 +224,34 @@ tags, plus pull requests, manual runs and a weekly run).
   `actions/cache`, keyed on OS, architecture, compiler and the JUCE pin.
 - JUCE is compiled once per plugin, inside each plugin's shared-code library
   (`juce_add_plugin` does that). The tests and editor shots link those
-  libraries instead of compiling JUCE again, so a full build compiles JUCE 5
-  times instead of 12. One JUCE library shared by all five plugins isn't
+  libraries instead of compiling JUCE again, so a full build compiles JUCE
+  once per plugin, not once per target. One JUCE library shared by all five plugins isn't
   possible with JUCE's CMake: `juce_add_plugin` links `juce_audio_plugin_client`
   into each plugin, which brings every JUCE module's sources with it, and some
   modules read the plugin's own settings (`JucePlugin_Name`, `JucePlugin_Build_*`).
 - No full LTO. `-DENCORE_LTO=THIN` turns on ThinLTO (Clang) or incremental LTCG
-  (MSVC); it is off because it didn't make Master measurably faster.
-  `MasterBench` (built with `-DENCORE_VST_BENCH=ON`) runs Master on a fixed
-  60 s test file (`MasterBench --make bench.wav`). On Linux x64 with Clang 18,
-  best of 7 runs, three rounds: 1.16 to 1.29 s of CPU without LTO, 1.21 to
-  1.24 s with ThinLTO (about 2% of one core either way, inside the run to run
-  noise, same output). GCC 13 without LTO: 1.30 to 1.36 s.
+  (MSVC); it is off. Turn it on only if `MasterBench` (built with
+  `-DENCORE_VST_BENCH=ON`; it runs Master on a fixed test file made by
+  `MasterBench --make bench.wav`) shows Master using less CPU with it.
 - Submodules are checked out at depth 1, never recursively.
 
 ## Releases
 
 Versions are `vMAJOR.MINOR.PATCH`. The version lives in `CMakeLists.txt`
 (`project(EncorePlugins VERSION ...)`) and is built into the installer, so
-change it on `main` (through a pull request) before releasing. CI refuses a
-tag that doesn't match it.
+change it on `main` (through a pull request, with the release notes in
+`CHANGELOG.md`) before releasing. CI refuses a tag that doesn't match it.
 
-A person at Encore Music, Inc. creates each release in GitHub: Releases, Draft
-a new release, a new tag `vX.Y.Z` on `main`, titled "ENCORE. VST vX.Y.Z", with
-the notes from the release pull request, Publish. The tag starts CI, which
-doesn't rebuild: it takes the files from the successful `main` build of that
-exact commit (the Windows installer and VST3 zip, the Mac .pkg and zip, the
-Linux x64 and arm64 archives, each with a `.sha256` file) and attaches them to
-the Release. If that
-commit has no successful `main` build (it's still running, or the push only
-changed docs and skipped the builds), the release job fails and says so: run CI
-by hand on `main` (Actions, CI, Run workflow), then re-run the release job.
-Workflow artifacts are kept for 90 days, so release a commit within that time.
+Once the `main` build of that commit has passed, a person at Encore Music,
+Inc. publishes the release in GitHub (the steps are in `CLAUDE.md`). The tag
+starts CI, which doesn't rebuild: it takes the files from the successful
+`main` build of that exact commit (the Windows installer and VST3 zip, the Mac
+.pkg and zip, the Linux x64 and arm64 archives, each with a `.sha256` file),
+attaches them to the Release, and sets the title and notes from
+`CHANGELOG.md`. If that commit has no successful `main` build (it's still
+running, or the push only changed docs and skipped the builds), the release
+job fails and says so: run CI by hand on `main` (Actions, CI, Run workflow),
+then re-run the release job. Workflow artifacts expire, so release a commit
+while its build's files are still there.
 
 Versions before 0.5.0 were published from a different repository.
