@@ -369,6 +369,14 @@ jobs:
             } else { Write-Host "   passed" }
           }
           if ($failed) { exit 1 }
+      # The plugins (and, on main, ENCORE. VST Setup) must not need the Visual C++
+      # runtime: a PC without it couldn't load them or start Setup
+      - name: Runs without the Visual C++ runtime
+        shell: pwsh
+        run: |
+          $paths = @(Get-ChildItem build/plugins/*/*_artefacts/Release/VST3 -Directory | ForEach-Object FullName)
+          if (Test-Path dist) { $paths += @(Get-ChildItem dist/*.exe | ForEach-Object FullName) }
+          ./.github/windows-runtime.ps1 @paths
       - name: VST3 zip and SHA-256
         if: needs.changes.outputs.kind == 'build'
         shell: bash

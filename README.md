@@ -33,6 +33,9 @@ Each release (under Releases on this repo) has:
   are never touched.
 - `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
   installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
+- The Windows plugins are 64-bit Intel/AMD (x64). On a Windows on Arm PC
+  (Snapdragon), use your DAW's x64 version to load them: a DAW running natively
+  on Arm can't load x64 plugins.
 - `ENCORE-VST-<version>-macos.pkg`: the Mac installer, for Apple Silicon and
   Intel Macs on macOS 11 or newer. It installs VST3 and Audio Units (for Logic
   and GarageBand); **Customize** lets you untick plugins. It isn't signed or
@@ -48,7 +51,8 @@ Each release (under Releases on this repo) has:
   VST3 and LV2 builds for 64-bit Linux on PCs and on Raspberry Pi (ENCORE. OS, or
   64-bit Raspberry Pi OS on a Pi 4 or 5). They run on Raspberry Pi OS Bookworm or
   newer, Debian 12 or newer and Ubuntu 22.04 or newer. Copy the `.vst3` folders to
-  `~/.vst3` and the `.lv2` folders to `~/.lv2`.
+  `~/.vst3` and the `.lv2` folders to `~/.lv2`. To remove a plugin, delete its
+  folder from both.
 - A `.sha256` file next to each download.
 
 After installing, rescan plugins in your DAW (Cubase: Studio > VST Plug-in
