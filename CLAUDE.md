@@ -98,6 +98,9 @@ Green Room (encoremusic)──▶ master.wasm from encore-audio-processing, by i
   they run on Raspberry Pi OS Bookworm, Debian 12, Ubuntu 22.04 and newer;
   `.github/linux-compat.sh` fails CI if a plugin needs newer. Don't move that job
   to a newer system without deciding to drop those.
+- Windows: the Visual C++ runtime is built in (`CMAKE_MSVC_RUNTIME_LIBRARY` in
+  `CMakeLists.txt`), so the plugins and Setup need nothing else installed;
+  `.github/windows-runtime.ps1` fails CI if one needs `msvcp140.dll` or the like.
 - Linux: install the packages listed in the README (JUCE 9 needs `libxi-dev`),
   then `cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release`, `cmake --build build`,
   `xvfb-run -a ctest --test-dir build --output-on-failure`. All must pass before a
