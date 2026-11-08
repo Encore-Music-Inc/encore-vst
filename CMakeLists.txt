@@ -6,7 +6,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 # The ENCORE. VST plugins. Each plugin lives in plugins/<Name>; the UI pieces they
 # share live in shared/. The audio processing code comes from the
 # encore-audio-processing submodule (external/encore-audio-processing).
-project(EncorePlugins VERSION 0.6.0)
+project(EncorePlugins VERSION 0.6.1)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
