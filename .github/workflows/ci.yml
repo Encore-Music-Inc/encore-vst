@@ -262,6 +262,14 @@ jobs:
             ENCORE-VST-*-linux-*.tar.gz
             ENCORE-VST-*-linux-*.tar.gz.sha256
           if-no-files-found: error
+      # The x64 plugins, for the Ubuntu 22.04 check (the next job loads them there)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.arch == 'x64'
+        with:
+          name: plugins-linux-x64
+          path: build/plugins/*/*_artefacts/Release/VST3/
+          if-no-files-found: error
+          retention-days: 3
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -270,6 +278,57 @@ jobs:
             build/shots/*.png
             pluginval-logs/
           if-no-files-found: ignore
+
+  # The README promises Ubuntu 22.04 too: load the x64 plugins built above in a
+  # plain Ubuntu 22.04 with pluginval (which itself needs glibc 2.35, as 22.04 has),
+  # with only the libraries a desktop has, not the build tools.
+  ubuntu-22:
+    name: Linux (loads on Ubuntu 22.04)
+    needs: [changes, linux]
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.kind != 'release'
+    runs-on: ubuntu-24.04
+    container: ubuntu:22.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install a desktop's libraries and pluginval's
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl unzip xvfb xauth \
+            libasound2 libfreetype6 libfontconfig1 libx11-6 libxext6 libxrandr2 libxinerama1 \
+            libxcursor1 libxrender1 libxcomposite1 libxi6 libgl1 libglu1-mesa
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: tests/pluginval.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: plugins-linux-x64
+          path: plugins
+      - name: Every library the plugins need is there
+        run: |
+          set -euo pipefail
+          missing=0
+          while IFS= read -r -d '' so; do
+            if ldd "$so" | grep -q 'not found'; then
+              echo "::error file=$so::$(ldd "$so" | grep 'not found' | tr -s ' \t' ' ')"; missing=1
+            else echo "ok: $so"; fi
+          done < <(find plugins -name '*.so' -print0)
+          exit "$missing"
+      - name: pluginval (strictness ${{ needs.changes.outputs.strictness }})
+        env:
+          LEVEL: ${{ needs.changes.outputs.strictness }}
+        run: |
+          set -euo pipefail
+          curl -sSfL -o "$RUNNER_TEMP/pluginval.zip" "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_Linux.zip"
+          echo "$PLUGINVAL_SHA256_LINUX  $RUNNER_TEMP/pluginval.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/pluginval.zip" -d "$RUNNER_TEMP/pluginval"
+          mapfile -d '' vst3 < <(find plugins -maxdepth 6 -type d -name '*.vst3' -path '*/Release/VST3/*' -print0)
+          (( ${#vst3[@]} == 5 )) || { echo "::error::expected 5 plugins, found ${#vst3[@]}"; exit 1; }
+          xvfb-run -a tests/pluginval.sh "$RUNNER_TEMP/pluginval/pluginval" "$LEVEL" "${vst3[@]}"
 
   windows:
     name: Windows x64
@@ -641,7 +700,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, pins, linux, windows, macos, sanitizers]
+    needs: [changes, pins, linux, ubuntu-22, windows, macos, sanitizers]
     runs-on: ubuntu-24.04
     steps:
       - name: Check the build and test jobs

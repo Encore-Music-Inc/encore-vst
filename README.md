@@ -238,7 +238,8 @@ tags, plus pull requests, manual runs and a weekly run).
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
 - Linux builds inside Debian 12 (Bookworm), the oldest system the plugins
   support, so they load on everything newer too; `.github/linux-compat.sh` fails
-  the build if a plugin needs a newer glibc or libstdc++ than Debian 12 has.
+  the build if a plugin needs a newer glibc or libstdc++ than Debian 12 has. The
+  x64 plugins are then loaded with pluginval in a plain Ubuntu 22.04 as well.
   Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
 - Pull requests build the Mac plugins for Apple Silicon only (half the
   compiling); `main` builds them universal.
