@@ -33,6 +33,9 @@ Each release (under Releases on this repo) has:
   are never touched.
 - `ENCORE-VST-<version>-windows-x64-vst3.zip`: the same VST3 plugins without the
   installer, to copy to `C:\Program Files\Common Files\VST3` yourself.
+- The Windows plugins are 64-bit Intel/AMD (x64). On a Windows on Arm PC
+  (Snapdragon), use your DAW's x64 version to load them: a DAW running natively
+  on Arm can't load x64 plugins.
 - `ENCORE-VST-<version>-macos.pkg`: the Mac installer, for Apple Silicon and
   Intel Macs on macOS 11 or newer. It installs VST3 and Audio Units (for Logic
   and GarageBand); **Customize** lets you untick plugins. It isn't signed or
@@ -46,8 +49,10 @@ Each release (under Releases on this repo) has:
   yourself.
 - `ENCORE-VST-<version>-linux-x64.tar.gz` and `ENCORE-VST-<version>-linux-arm64.tar.gz`:
   VST3 and LV2 builds for 64-bit Linux on PCs and on Raspberry Pi (ENCORE. OS, or
-  64-bit Raspberry Pi OS on a Pi 4 or 5). Copy the `.vst3` folders to `~/.vst3`
-  and the `.lv2` folders to `~/.lv2`.
+  64-bit Raspberry Pi OS on a Pi 4 or 5). They run on Raspberry Pi OS Bookworm or
+  newer, Debian 12 or newer and Ubuntu 22.04 or newer. Copy the `.vst3` folders to
+  `~/.vst3` and the `.lv2` folders to `~/.lv2`. To remove a plugin, delete its
+  folder from both.
 - A `.sha256` file next to each download.
 
 After installing, rescan plugins in your DAW (Cubase: Studio > VST Plug-in
@@ -231,7 +236,11 @@ tags, plus pull requests, manual runs and a weekly run).
 
 - A pull request or push that only changes `*.md`, `LICENSE` or
   `.github/CODEOWNERS` skips the builds (skipped counts as passing).
-- Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
+- Linux builds inside Debian 12 (Bookworm), the oldest system the plugins
+  support, so they load on everything newer too; `.github/linux-compat.sh` fails
+  the build if a plugin needs a newer glibc or libstdc++ than Debian 12 has. The
+  x64 plugins are then loaded with pluginval in a plain Ubuntu 22.04 as well.
+  Linux arm64 builds on GitHub's native arm64 runner (`ubuntu-24.04-arm`).
 - Pull requests build the Mac plugins for Apple Silicon only (half the
   compiling); `main` builds them universal.
 - Every action is pinned to a commit, with its version in a comment.

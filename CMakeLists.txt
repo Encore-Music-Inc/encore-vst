@@ -10,6 +10,12 @@ project(EncorePlugins VERSION 0.6.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Windows: the Visual C++ runtime is built into every plugin and ENCORE. VST Setup,
+# so they run on a PC that doesn't have Microsoft's runtime installed
+# (.github/windows-runtime.ps1 checks this in CI).
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 # The one submodule, encore-audio-processing, and the JUCE it pins: its
 # external/JUCE is the JUCE version for all of ENCORE., so the plugins build
