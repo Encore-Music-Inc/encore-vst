@@ -10,13 +10,14 @@ name: CI
 #                         on the runner and checked with auval), Linux x64 and
 #                         arm64 (VST3, LV2); each with the tests and pluginval, and
 #                         uploaded as workflow artifacts
-#   weekly (Monday), or   the pull request checks with pluginval at its strictest,
+#   weekly (schedule), or the pull request checks with pluginval at its strictest,
 #   manual with checks:   and the tests built with AddressSanitizer and
 #   weekly                UndefinedBehaviorSanitizer on Linux x64
 #   v* tag                no rebuild: the files from the successful main build of
 #                         the tag's commit are attached to the GitHub Release
 #
-# Docs-only changes skip the builds (see the changes job).
+# Docs-only changes, and pull requests that only change the version and
+# CHANGELOG.md, skip the builds (see the changes job).
 #
 # Every action is pinned to a commit (the version is in the comment next to it);
 # Dependabot proposes updates (.github/dependabot.yml).
@@ -66,8 +67,12 @@ env:
 jobs:
   # Decides what runs. A pull request or push that only touches docs (*.md,
   # LICENSE, .github/CODEOWNERS) skips the builds; skipped jobs count as passing,
-  # so docs-only pull requests stay mergeable when checks are required. Tags,
-  # manual and weekly runs always run what they need.
+  # so docs-only pull requests stay mergeable when checks are required. So does a
+  # pull request that only changes the version line in CMakeLists.txt and
+  # CHANGELOG.md (a "Release vX.Y.Z" pull request): its release notes are still
+  # checked, and the push to main after merging builds everything, which is the
+  # build a release is made from. Tags, manual and weekly runs always run what
+  # they need.
   changes:
     name: What changed
     runs-on: ubuntu-24.04
@@ -121,6 +126,18 @@ jobs:
           fi
           echo "Changed files:"; echo "$files"
           code=$(echo "$files" | grep -Ev '(\.md$|^LICENSE$|^\.github/CODEOWNERS$)' | grep -c . || true)
+          # A pull request that changes only the version line and CHANGELOG.md
+          version_file=CMakeLists.txt
+          if [[ "$EVENT" == "pull_request" && "$code" -gt 0 ]] \
+             && [[ "$(echo "$files" | grep -Ev '(\.md$|^LICENSE$|^\.github/CODEOWNERS$)')" == "$version_file" ]]; then
+            other=$(git diff -U0 "$PR_BASE" "$PR_HEAD" -- "$version_file" | grep -E '^[-+]' | grep -Ev '^(\+\+\+|---) ' \
+                    | grep -Ev '^[-+]project\(EncorePlugins VERSION [0-9]+\.[0-9]+\.[0-9]+\)' | grep -c . || true)
+            if [[ "$other" -eq 0 ]]; then
+              echo "code=false" >> "$GITHUB_OUTPUT"
+              echo "Version only: the release notes are checked; the builds run on main after merging"
+              exit 0
+            fi
+          fi
           if [[ "$code" -gt 0 ]]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; echo "Docs only: builds and tests are skipped"; fi
       - id: version
         name: Version (from CMakeLists.txt; a tag must match it)
