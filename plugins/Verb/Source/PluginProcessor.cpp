@@ -95,7 +95,10 @@ void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     // mono in -> stereo out: feed the one channel to both sides
     if (outCh > inCh)
-        buffer.copyFrom (1, 0, buffer, 0, 0, n);
+    {
+        const float* one[1] { buffer.getReadPointer (0) };
+        vs::channels::map (vs::channels::Map::stereo, one, 1, n, buffer.getArrayOfWritePointers());
+    }
 
     const float* inL = buffer.getReadPointer (0);
     const float* inR = buffer.getReadPointer (buffer.getNumChannels() > 1 && outCh > 1 ? 1 : 0);

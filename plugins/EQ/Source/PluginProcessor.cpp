@@ -58,8 +58,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout EqProcessor::createLayout()
     auto logRange = [] (float lo, float hi)
     {
         return NormalisableRange<float> (lo, hi,
-            [] (float a, float b, float t) { return a * std::pow (b / a, t); },
-            [] (float a, float b, float v) { return std::log (v / a) / std::log (b / a); });
+            [] (float a, float b, float t) { return vs::axis::logHz (t, a, b); },
+            [] (float a, float b, float v) { return vs::axis::logPosition (v, a, b); });
     };
 
     for (int i = 0; i < numBands; ++i)
@@ -185,12 +185,7 @@ void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuff
 
     auto pushTap = [&] (Tap& tap)
     {
-        for (int i = 0; i < n; ++i)
-        {
-            float m = 0.0f;
-            for (int c = 0; c < nch; ++c) m += main.getSample (c, i);
-            monoScratch[(size_t) i] = m / (float) nch;
-        }
+        vs::channels::monoAverage (main.getArrayOfReadPointers(), nch, n, monoScratch.data());
         tap.push (monoScratch.data(), n);
     };
     pushTap (preTap);

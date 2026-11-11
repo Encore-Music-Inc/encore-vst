@@ -152,8 +152,10 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     sidechainLive = scCh > 0;
 
     // Everything runs in stereo internally; a mono input is duplicated
-    work.copyFrom (0, 0, buffer, 0, 0, n);
-    work.copyFrom (1, 0, buffer, inCh > 1 ? 1 : 0, 0, n);
+    {
+        const float* in[2] { buffer.getReadPointer (0), inCh > 1 ? buffer.getReadPointer (1) : nullptr };
+        vs::channels::map (vs::channels::Map::stereo, in, inCh > 1 ? 2 : 1, n, work.getArrayOfWritePointers());
+    }
     inputDb.store (vs::ampToDb (vs::channels::peakOf (work.getArrayOfReadPointers(), 2, n)));
 
     float* const* d = work.getArrayOfWritePointers();

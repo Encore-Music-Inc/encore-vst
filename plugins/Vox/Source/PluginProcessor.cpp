@@ -185,8 +185,10 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     }
 
     // Everything runs in stereo internally; a mono input is duplicated.
-    work.copyFrom (0, 0, buffer, 0, 0, n);
-    work.copyFrom (1, 0, buffer, inCh > 1 ? 1 : 0, 0, n);
+    {
+        const float* in[2] { buffer.getReadPointer (0), inCh > 1 ? buffer.getReadPointer (1) : nullptr };
+        vs::channels::map (vs::channels::Map::stereo, in, inCh > 1 ? 2 : 1, n, work.getArrayOfWritePointers());
+    }
     inputDb.store (vs::ampToDb (vs::channels::peakOf (work.getArrayOfReadPointers(), 2, n)));
 
     float* const* d = work.getArrayOfWritePointers();
@@ -240,7 +242,8 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         vs::channels::map (vs::channels::Map::mono, d, 2, n, monoOut);
 
         pitch.process (mono.data(), d[0], h[0], h[1], n);
-        work.copyFrom (1, 0, work, 0, 0, n);
+        const float* one[1] { work.getReadPointer (0) };
+        vs::channels::map (vs::channels::Map::stereo, one, 1, n, work.getArrayOfWritePointers());
     }
     else
     {
@@ -261,8 +264,7 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     if (active && harmOn)
     {
-        work.addFrom (0, 0, harm, 0, 0, n);
-        work.addFrom (1, 0, harm, 1, 0, n);
+        for (int c = 0; c < 2; ++c) vs::mix::addWithGain (harm.getReadPointer (c), work.getWritePointer (c), n, 1.0f);
     }
 
     // 4. Tone: drive (always runs so latency stays constant) + EQ
