@@ -83,7 +83,7 @@ pinned to (`.github/pins/check.sh`).
 <!-- pinned-releases:start -->
 | Folder | Repository | Release |
 |---|---|---|
-| `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v2.1.0` |
+| `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v2.2.0` |
 | `external/encore-audio-processing/external/JUCE` | [JUCE](https://github.com/juce-framework/JUCE), pinned by encore-audio-processing (shown, not pinned here; bundles the VST3 SDK, MIT) | `9.0.5` |
 <!-- pinned-releases:end -->
 
