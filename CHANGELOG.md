@@ -5,6 +5,60 @@ job puts its section on the GitHub release (see "Release notes" in
 `CLAUDE.md`). Versions before 0.5.0 were published from a different
 repository.
 
+## v0.7.0
+
+All of the plugins' audio processing now comes from ENCORE. Audio
+Processing, the same code the rest of ENCORE. uses. Three defects are fixed,
+and a few things sound or read a little differently, listed below. Your
+projects and presets load as before.
+
+### What's new
+- **Vox:** the tone EQ glides when you move a knob, so there's no zipper
+  noise while you turn it or automate it. The reverb send is now the
+  ENCORE. reverb's Space setting, with a high cut that works at 44.1 and
+  48 kHz (it did nothing there before). Depending on the voice, the reverb is
+  0.7 to 4 dB different in level and 2 to 4 dB darker in the top octave.
+- **Master:** the true-peak meter uses the limiter's own detector, so the
+  two always agree. It no longer reads higher than the real peak.
+- **Strum:** "Hear Original" matches the original to the processed sound by
+  loudness as people hear it, so a brighter or darker sound doesn't skew the
+  comparison.
+- **Vox and Strum:** the input and output meters show the louder side of a
+  stereo signal, not only the left.
+
+### What's fixed
+- **Master:** three presets selected a different style from the one their
+  name suggests. They now select Heavy (Punk / Loud, Emo / Big Chorus), Warm
+  (Lo-fi Demo) and Bright (Clear Vocal Mix).
+- **Verb:** the picture showed no early reflections in Huge mode, though
+  Huge has them. It now shows every mode's reflections, each at its level.
+- **Vox:** moving a tone knob made zipper noise.
+
+### Downloads
+- **Mac** (Apple Silicon and Intel, macOS 11 or newer):
+  `ENCORE-VST-0.7.0-macos.pkg` installs VST3 and Audio Units (for Logic and
+  GarageBand). It isn't signed yet: the first time, macOS says it was
+  "Not Opened". Click **Done**, go to **System Settings > Privacy & Security**,
+  click **Open Anyway**, then open the installer again. Prefer copying files
+  yourself? Use `ENCORE-VST-0.7.0-macos.zip`.
+- **Windows** (10 and 11, 64-bit): `ENCORE-VST-0.7.0-windows-setup.exe`. If
+  SmartScreen warns you, click **More info**, then **Run anyway**. Or
+  `ENCORE-VST-0.7.0-windows-x64-vst3.zip` to copy the VST3s yourself. The
+  plugins are x64: on a Windows on Arm PC, load them in your DAW's x64 version.
+- **Linux and Raspberry Pi** (Raspberry Pi OS Bookworm or newer, Debian 12 or
+  newer, Ubuntu 22.04 or newer): `ENCORE-VST-0.7.0-linux-x64.tar.gz` (PCs) and
+  `ENCORE-VST-0.7.0-linux-arm64.tar.gz` (Raspberry Pi 4 and 5, 64-bit), with
+  VST3 and LV2. Copy the `.vst3` folders to `~/.vst3` and the `.lv2` folders to
+  `~/.lv2`.
+
+Each file has a `.sha256` next to it, to check the download. After
+installing, rescan plugins in your DAW.
+
+### Built on
+ENCORE. Audio Processing v2.2.0, which brings JUCE 9.0.5.
+
+Questions or problems: support@encoremusic.studio
+
 ## v0.6.1
 
 ENCORE. VST now runs on more Windows PCs and Linux systems: on Windows it no
