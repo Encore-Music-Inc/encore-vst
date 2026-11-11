@@ -83,7 +83,7 @@ pinned to (`.github/pins/check.sh`).
 <!-- pinned-releases:start -->
 | Folder | Repository | Release |
 |---|---|---|
-| `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v1.0.1` |
+| `external/encore-audio-processing` | [encore-audio-processing](https://github.com/Encore-Music-Inc/encore-audio-processing) | `v2.2.0` |
 | `external/encore-audio-processing/external/JUCE` | [JUCE](https://github.com/juce-framework/JUCE), pinned by encore-audio-processing (shown, not pinned here; bundles the VST3 SDK, MIT) | `9.0.5` |
 <!-- pinned-releases:end -->
 
@@ -178,11 +178,14 @@ editor shots open the plugins' editors.
 |---|---|
 | `PresetTests` | the user preset system, round trip |
 | `StrumTests` | Strum's audio processing and the whole plugin (Learn, state, presets). The source is `external/encore-audio-processing/tests/StrumTests.cpp`, built here with `ENCORE_STRUM_PLUGIN_TESTS=1` and the plugin's own processor |
+| `ReferenceTests` | encore-audio-processing's reference set: every result in its `data/reference.json`, from the headers as this repository compiles them. The source is `external/encore-audio-processing/tests/ReferenceTests.cpp` |
 | `ShotVox` ... `ShotStrum` | each plugin's editor draws (to `build/shots/<Name>.png`) |
 | `SetupTests` | the installer: install, replace, remove, in use, the Windows entry (Windows, after `installer/package.ps1`) |
 
 The other audio processing suites (pitch, reverb, EQ, mastering, the build
-without JUCE) live in encore-audio-processing and run there.
+without JUCE) live in encore-audio-processing and run there. All of the
+plugins' audio processing comes from there too; CI's
+`.github/no-audio-processing.sh` fails if the plugins grow their own.
 
 CI also runs [pluginval](https://github.com/Tracktion/pluginval), Tracktion's
 plugin validator, on every plugin: it loads each one the way a DAW does and

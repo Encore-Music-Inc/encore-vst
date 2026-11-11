@@ -3,6 +3,7 @@
 #include "EncoreProcessorBase.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "dsp/Ramp.h"
 #include "dsp/ReverbEngine.h"
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
@@ -52,7 +53,7 @@ private:
 
     vs::ReverbEngine engine;
     juce::AudioBuffer<float> wet;
-    juce::SmoothedValue<float> mixSmooth;
+    vs::Ramp<false> mixSmooth;
     int currentProgram = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VerbProcessor)

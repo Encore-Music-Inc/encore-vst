@@ -208,19 +208,12 @@ void VocalSuiteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     harm.setSize (2, samplesPerBlock);
     mono.assign ((size_t) samplesPerBlock, 0.0f);
 
-    lastHpf = -1; lastLow = lastBody = lastPres = lastAir = -100;
-    for (int c = 0; c < 2; ++c)
-    {
-        for (auto* f : { &hpf1[c], &hpf2[c], &lowEq[c], &bodyEq[c], &presEq[c], &airEq[c] })
-        {
-            f->coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter (sampleRate, 1000.0, 1.0, 1.0f);
-            f->reset();
-        }
-    }
     updateFilters();
+    eq.prepare (sampleRate);
+    eq.reset();
 
     outGain.reset (sampleRate, 0.05);
-    outGain.setCurrentAndTargetValue (vs::dbToGain (prm.output->load()));
+    outGain.setCurrentAndTarget (vs::dbToGain (prm.output->load()));
 
     pitchActive = prm.tuneOn->load() > 0.5f || prm.harmOn->load() > 0.5f;
     setLatencySamples (saturator.getLatencySamples() + (pitchActive ? pitch.getLatency() : 0));
@@ -228,30 +221,13 @@ void VocalSuiteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void VocalSuiteProcessor::updateFilters()
 {
-    using AC = juce::dsp::IIR::ArrayCoefficients<float>;
-
-    const float hpf = prm.hpf->load();
-    if (hpf != lastHpf)
-    {
-        lastHpf = hpf;
-        // 4th-order Butterworth = two biquads with these Qs
-        const auto a = AC::makeHighPass (fs, hpf, 0.5412f);
-        const auto b = AC::makeHighPass (fs, hpf, 1.3066f);
-        for (int c = 0; c < 2; ++c) { *hpf1[c].coefficients = a; *hpf2[c].coefficients = b; }
-    }
-
-    auto band = [this] (float value, float& last, Filter* filters, auto make)
-    {
-        if (value == last) return;
-        last = value;
-        const auto coefs = make (vs::dbToGain (value));
-        for (int c = 0; c < 2; ++c) *filters[c].coefficients = coefs;
-    };
-
-    band (prm.low->load(), lastLow, lowEq,        [this] (float g) { return AC::makeLowShelf (fs, 110.0f, 0.7f, g); });
-    band (prm.body->load(), lastBody, bodyEq,     [this] (float g) { return AC::makePeakFilter (fs, 350.0f, 0.9f, g); });
-    band (prm.presence->load(), lastPres, presEq, [this] (float g) { return AC::makePeakFilter (fs, 3500.0f, 0.8f, g); });
-    band (prm.air->load(), lastAir, airEq,        [this] (float g) { return AC::makeHighShelf (fs, juce::jmin (11000.0f, (float) fs * 0.42f), 0.7f, g); });
+    vs::VocalEq::Settings s;
+    s.lowCutHz = prm.hpf->load();
+    s.lowDb = prm.low->load();
+    s.bodyDb = prm.body->load();
+    s.presenceDb = prm.presence->load();
+    s.airDb = prm.air->load();
+    eq.setSettings (s);
 }
 
 void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -273,7 +249,7 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     // Everything runs in stereo internally; a mono input is duplicated.
     work.copyFrom (0, 0, buffer, 0, 0, n);
     work.copyFrom (1, 0, buffer, inCh > 1 ? 1 : 0, 0, n);
-    inputDb.store (vs::ampToDb (buffer.getMagnitude (0, n)));
+    inputDb.store (vs::ampToDb (vs::channels::peakOf (work.getArrayOfReadPointers(), 2, n)));
 
     float* const* d = work.getArrayOfWritePointers();
     const bool rideOn = prm.rideOn->load() > 0.5f;
@@ -287,10 +263,7 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     // 1. Clean: low cut + gate
     if (cleanOn)
     {
-        if (lastHpf > 21.0f)
-            for (int c = 0; c < 2; ++c)
-                for (int i = 0; i < n; ++i)
-                    d[c][i] = hpf2[c].processSample (hpf1[c].processSample (d[c][i]));
+        eq.processLowCut (d, 2, n);
 
         gate.setThreshold (prm.gate->load());
         gate.process (d, 2, n);
@@ -325,8 +298,8 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         s.humanize = prm.humanize->load();
         pitch.setSettings (s);
 
-        for (int i = 0; i < n; ++i)
-            mono[(size_t) i] = 0.5f * (d[0][i] + d[1][i]);
+        float* monoOut[1] { mono.data() };
+        vs::channels::map (vs::channels::Map::mono, d, 2, n, monoOut);
 
         pitch.process (mono.data(), d[0], h[0], h[1], n);
         work.copyFrom (1, 0, work, 0, 0, n);
@@ -362,9 +335,7 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     }
 
     if (toneOn)
-        for (int c = 0; c < 2; ++c)
-            for (int i = 0; i < n; ++i)
-                d[c][i] = airEq[c].processSample (presEq[c].processSample (bodyEq[c].processSample (lowEq[c].processSample (d[c][i]))));
+        eq.processTone (d, 2, n);
 
     // 5. De-ess after EQ, since presence/air boosts make esses worse
     if (cleanOn && prm.deess->load() > 0.001f)
@@ -405,28 +376,21 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     }
 
     // 8. Output
-    outGain.setTargetValue (vs::dbToGain (prm.output->load()));
+    outGain.setTarget (vs::dbToGain (prm.output->load()));
     for (int i = 0; i < n; ++i)
     {
-        const float g = outGain.getNextValue();
+        const float g = outGain.next();
         d[0][i] *= g;
         d[1][i] *= g;
     }
 
-    if (outCh == 1)
-    {
-        buffer.copyFrom (0, 0, work.getReadPointer (0), n, 0.5f);
-        buffer.addFrom (0, 0, work.getReadPointer (1), n, 0.5f);
-    }
-    else
-    {
-        buffer.copyFrom (0, 0, work, 0, 0, n);
-        buffer.copyFrom (1, 0, work, 1, 0, n);
-    }
+    // A mono output gets the average of the two sides
+    vs::channels::map (outCh == 1 ? vs::channels::Map::mono : vs::channels::Map::keep,
+                       work.getArrayOfReadPointers(), 2, n, buffer.getArrayOfWritePointers());
     for (int c = juce::jmax (outCh, 2); c < buffer.getNumChannels(); ++c)
         buffer.clear (c, 0, n);
 
-    outputDb.store (vs::ampToDb (buffer.getMagnitude (0, n)));
+    outputDb.store (vs::ampToDb (vs::channels::peakOf (buffer.getArrayOfReadPointers(), juce::jmin (outCh, buffer.getNumChannels()), n)));
 }
 
 int VocalSuiteProcessor::getNumPrograms() { return (int) presets.size(); }

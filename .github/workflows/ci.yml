@@ -696,8 +696,9 @@ jobs:
 
   # Every pin is a published release (or a listed exception): the README's
   # Pinned releases table against what each folder is pinned to, including
-  # what encore-audio-processing pins (JUCE). Runs on every pull request and
-  # push, docs-only ones too: it reads the README.
+  # what encore-audio-processing pins (JUCE). And the plugins keep no audio
+  # processing of their own (.github/no-audio-processing.sh). Runs on every
+  # pull request and push, docs-only ones too: both only read files.
   pins:
     name: Pinned releases
     needs: changes
@@ -711,6 +712,8 @@ jobs:
           persist-credentials: false
       - name: Check the pins
         run: bash .github/pins/check.sh
+      - name: No audio processing outside encore-audio-processing
+        run: bash .github/no-audio-processing.sh
 
   # The one check to require on main. It fails if any build or test job failed or
   # was cancelled, and passes when they passed or were skipped (docs-only changes).

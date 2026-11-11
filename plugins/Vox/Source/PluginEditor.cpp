@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Music.h"
 
 namespace colours = vs::theme;
 
@@ -162,8 +163,7 @@ void VocalSuiteEditor::paint (juce::Graphics& g)
         {
             const int nearest = juce::roundToInt (shownNote);
             const int cents = juce::roundToInt ((shownNote - (float) nearest) * 100.0f);
-            txt = vs::scales::keyNames[((nearest % 12) + 12) % 12] + juce::String (nearest / 12 - 1)
-                  + "  " + (cents >= 0 ? "+" : "") + juce::String (cents) + "c";
+            txt = juce::String (vs::music::noteName (nearest)) + "  " + (cents >= 0 ? "+" : "") + juce::String (cents) + "c";
         }
         else if (! proc.isPitchActive())
         {

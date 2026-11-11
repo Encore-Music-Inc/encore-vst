@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include "ui/Theme.h"
 #include "dsp/ResonanceFinder.h"
+#include "dsp/Spectrum.h"
 
 // The big frequency display: live spectrum, the EQ curve, draggable band
 // nodes, and (Smart view) smart bands, carve activity and resonance markers.
@@ -19,14 +20,10 @@ public:
 
     explicit EqDisplay (EqProcessor& p) : proc (p)
     {
-        preHist.assign (histSize, 0.0f);
-        postHist.assign (histSize, 0.0f);
-        fftData.assign ((size_t) fftSize * 2, 0.0f);
-        window.resize ((size_t) fftSize);
-        for (int i = 0; i < fftSize; ++i)
-            window[(size_t) i] = 0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * (float) i / (float) (fftSize - 1));
-        postDb.assign ((size_t) fftSize / 2 + 1, -120.0f);
-        prePow.assign ((size_t) fftSize / 2 + 1, 0.0f);
+        // The levels drawn (post EQ) and the ~1 s power average the resonance
+        // finder reads (pre EQ: steady resonances stand out, transients don't)
+        preSpec.prepare ({});
+        postSpec.prepare ({});
         tmp.resize (1 << 15);
     }
 
@@ -39,23 +36,11 @@ public:
     // Called from the editor's timer (~30 Hz)
     void tick()
     {
-        pullTap (proc.preTap, preHist, preWrite);
-        pullTap (proc.postTap, postHist, postWrite);
+        pullTap (proc.preTap, preSpec);
+        pullTap (proc.postTap, postSpec);
         fs = proc.getRate();
-
-        spectrum (postHist, postWrite);
-        for (size_t b = 0; b < postDb.size(); ++b)
-        {
-            const float db = 20.0f * std::log10 (fftData[b] / (float) (fftSize / 4) + 1e-9f);
-            postDb[b] += (db > postDb[b] ? 0.5f : 0.15f) * (db - postDb[b]);
-        }
-
-        spectrum (preHist, preWrite);
-        for (size_t b = 0; b < prePow.size(); ++b)
-        {
-            const float m = fftData[b] / (float) (fftSize / 4);
-            prePow[b] += 0.04f * (m * m - prePow[b]); // ~1 s average: steady resonances stand out, transients don't
-        }
+        postSpec.update();
+        preSpec.update();
 
         if (++frame % 3 == 0 && findResonances)
             detectResonances();
@@ -99,10 +84,7 @@ public:
             for (float x = plot.getX(); x <= plot.getRight(); x += 2.0f)
             {
                 const float f = freqFor (x);
-                const float bin = f / (float) fs * (float) fftSize;
-                const int b0 = juce::jlimit (1, (int) postDb.size() - 2, (int) bin);
-                const float frac = bin - (float) b0;
-                const float db = postDb[(size_t) b0] + frac * (postDb[(size_t) b0 + 1] - postDb[(size_t) b0]) + 4.5f * std::log2 (f / 1000.0f);
+                const float db = postSpec.levelAt (f, fs, 4.5f);
                 spec.lineTo (x, juce::jlimit (plot.getY(), plot.getBottom(), plot.getBottom() - plot.getHeight() * (db + 84.0f) / 84.0f));
             }
             spec.lineTo (plot.getRight(), plot.getBottom());
@@ -227,7 +209,6 @@ public:
     }
 
 private:
-    static constexpr int fftOrder = 12, fftSize = 1 << fftOrder, histSize = 1 << 13;
 
     static juce::String id (const char* prefix, int i, const char* what) { return juce::String (prefix) + juce::String (i + 1) + "_" + what; }
 
@@ -252,7 +233,7 @@ private:
         for (int k = 0; k < vs::Carve::numBands; ++k)
         {
             const float gdb = proc.carveGainDb[k].load();
-            if (gdb < -0.05f) carveCache.push_back (vs::BiquadCoefs::peak (fs, vs::Carve::bandFreq (k), 2.8, gdb * 0.8f));
+            if (gdb < -0.05f) carveCache.push_back (vs::Carve::bandCurve (fs, k, gdb));
         }
     }
 
@@ -392,25 +373,13 @@ private:
     }
 
     // ---- analysis -------------------------------------------------------
-    void pullTap (EqProcessor::Tap& tap, std::vector<float>& hist, int& write)
+    void pullTap (EqProcessor::Tap& tap, vs::SpectrumAnalyser& spec)
     {
         const int got = tap.pull (tmp.data(), (int) tmp.size());
-        for (int i = 0; i < got; ++i)
-        {
-            hist[(size_t) write] = tmp[(size_t) i];
-            write = (write + 1) & (histSize - 1);
-        }
+        spec.push (tmp.data(), got);
     }
 
-    void spectrum (const std::vector<float>& hist, int write)
-    {
-        std::fill (fftData.begin(), fftData.end(), 0.0f);
-        for (int i = 0; i < fftSize; ++i)
-            fftData[(size_t) i] = hist[(size_t) ((write - fftSize + i) & (histSize - 1))] * window[(size_t) i];
-        fft.performFrequencyOnlyForwardTransform (fftData.data(), true);
-    }
-
-    void detectResonances() { resonances = vs::findResonances (prePow, fs, fftSize); }
+    void detectResonances() { resonances = vs::findResonances (preSpec.power(), fs, preSpec.size()); }
 
     void begin (std::initializer_list<juce::String> ids)
     {
@@ -427,8 +396,8 @@ private:
     EqProcessor& proc;
     double fs = 48000.0;
     juce::Rectangle<float> plot;
-    juce::dsp::FFT fft { fftOrder };
-    std::vector<float> preHist, postHist, fftData, window, postDb, prePow, tmp;
-    int preWrite = 0, postWrite = 0, frame = 0, dragIndex = -1;
+    vs::SpectrumAnalyser preSpec, postSpec;
+    std::vector<float> tmp;
+    int frame = 0, dragIndex = -1;
     std::vector<juce::RangedAudioParameter*> gestures;
 };

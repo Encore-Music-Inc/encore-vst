@@ -173,7 +173,7 @@ void EqProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     carve.prepare (sampleRate);
     carve.setSettings (readCarve());
     outGain.reset (sampleRate, 0.05);
-    outGain.setCurrentAndTargetValue (vs::dbToGain (outputP->load()));
+    outGain.setCurrentAndTarget (vs::dbToGain (outputP->load()));
     monoScratch.assign ((size_t) samplesPerBlock, 0.0f);
 }
 
@@ -230,10 +230,10 @@ void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuff
         carve.process (d, nch, sc, scCh, start, len);
     }
 
-    outGain.setTargetValue (vs::dbToGain (outputP->load()));
+    outGain.setTarget (vs::dbToGain (outputP->load()));
     for (int i = 0; i < n; ++i)
     {
-        const float g = outGain.getNextValue();
+        const float g = outGain.next();
         for (int c = 0; c < nch; ++c) d[c][i] *= g;
     }
 
