@@ -4,9 +4,12 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "dsp/Ramp.h"
+#include "dsp/Channels.h"
 #include "dsp/BodyMatch.h"
 #include "dsp/GuitarFixes.h"
 #include "dsp/Doubler.h"
+#include "dsp/AbCompare.h"
 #include "dsp/Util.h"
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
@@ -101,11 +104,11 @@ private:
     juce::CriticalSection designLock;
     bool restoringProject = false;
 
-    juce::AudioBuffer<float> work, wet, dry;
+    juce::AudioBuffer<float> work, wet;
     std::vector<float> diMono, micMono;
-    juce::SmoothedValue<float> bodyMix, compareMix;
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> outGain, matchGain;
-    float wetPow = 0.0f, dryPow = 0.0f, powCoef = 0.0f;
+    vs::Ramp<false> bodyMix;
+    vs::Ramp<true> outGain;
+    vs::AbCompare compare;
     bool bodyWasIdle = true;
     double fs = 48000.0;
     int currentProgram = 0;

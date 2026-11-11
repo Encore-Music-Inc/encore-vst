@@ -5,6 +5,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "dsp/MasterChain.h"
+#include "dsp/AbCompare.h"
+#include "dsp/TruePeak.h"
 #include "ui/PresetManager.h"
 #include "ui/FactoryPresets.h"
 
@@ -66,13 +68,8 @@ private:
     } prm;
 
     vs::MasterChain chain;
-    vs::LoudnessMeter rawInMeter;
-    juce::dsp::Oversampling<float> tpMeterOs { 2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false, false };
-    juce::AudioBuffer<float> original, tpScratch;
-    std::vector<float> origDelay[2];
-    int origDelayLen = 1, origIdx = 0;
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> matchGain;
-    juce::SmoothedValue<float> mix;
+    vs::AbCompare compare;
+    vs::TruePeakMeter tpMeter;
     std::atomic<bool> learnRequested { false }, peakHoldReset { false };
     bool lastLearning = false;
     int currentProgram = 0;

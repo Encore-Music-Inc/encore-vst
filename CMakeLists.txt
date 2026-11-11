@@ -117,6 +117,13 @@ if(ENCORE_VST_TESTS)
     target_compile_definitions(StrumTests PRIVATE ENCORE_STRUM_PLUGIN_TESTS=1)
     add_test(NAME StrumTests COMMAND StrumTests)
 
+    # encore-audio-processing's reference set (data/reference.json), built with
+    # this repository's compiler and flags: proves the plugins' headers give
+    # the results that repository checked
+    encore_plugin_test(ReferenceTests Master ${ENCORE_AUDIO_PROCESSING_DIR}/tests/ReferenceTests.cpp)
+    target_compile_definitions(ReferenceTests PRIVATE ENCORE_AUDIO_ROOT_DIR="${ENCORE_AUDIO_PROCESSING_DIR}")
+    add_test(NAME ReferenceTests COMMAND ReferenceTests)
+
     # Each plugin's editor drawn to a PNG (EditorShot.cpp), for checking the look.
     # The installer uses these for its plugin cards.
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/shots")

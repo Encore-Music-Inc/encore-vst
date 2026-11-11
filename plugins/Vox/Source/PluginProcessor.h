@@ -4,12 +4,15 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "dsp/Ramp.h"
+#include "dsp/Channels.h"
 #include "dsp/Rider.h"
 #include "dsp/Gate.h"
 #include "dsp/Saturator.h"
 #include "dsp/DeEsser.h"
 #include "dsp/Compressor.h"
 #include "dsp/Space.h"
+#include "dsp/VocalEq.h"
 #include "dsp/PitchEngine.h"
 #include "ui/PresetManager.h"
 
@@ -87,12 +90,10 @@ private:
     vs::Compressor comp;
     vs::Space space;
 
-    using Filter = juce::dsp::IIR::Filter<float>;
-    Filter hpf1[2], hpf2[2], lowEq[2], bodyEq[2], presEq[2], airEq[2];
-    float lastHpf = -1, lastLow = -100, lastBody = -100, lastPres = -100, lastAir = -100;
+    vs::VocalEq eq;
 
     juce::AudioBuffer<float> work;
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> outGain;
+    vs::Ramp<true> outGain;
     double fs = 44100.0;
     int currentProgram = 0;
 

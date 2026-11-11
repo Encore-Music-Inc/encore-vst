@@ -105,7 +105,6 @@ void StrumProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     work.setSize (2, samplesPerBlock);
     wet.setSize (2, samplesPerBlock);
-    dry.setSize (2, samplesPerBlock);
     diMono.assign ((size_t) samplesPerBlock, 0.0f);
     micMono.assign ((size_t) samplesPerBlock, 0.0f);
 
@@ -123,14 +122,11 @@ void StrumProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     bodyWasIdle = true;
 
     bodyMix.reset (sampleRate, 0.03);
-    bodyMix.setCurrentAndTargetValue (prm.bodyOn->load() > 0.5f ? 1.0f : 0.0f);
-    compareMix.reset (sampleRate, 0.03);
-    compareMix.setCurrentAndTargetValue (prm.compare->load() > 0.5f ? 1.0f : 0.0f);
+    bodyMix.setCurrentAndTarget (prm.bodyOn->load() > 0.5f ? 1.0f : 0.0f);
     outGain.reset (sampleRate, 0.05);
-    outGain.setCurrentAndTargetValue (vs::dbToGain (prm.output->load()));
-    matchGain.reset (sampleRate, 0.2);
-    matchGain.setCurrentAndTargetValue (1.0f);
-    wetPow = dryPow = 0.0f;
+    outGain.setCurrentAndTarget (vs::dbToGain (prm.output->load()));
+    compare.setHearOriginal (prm.compare->load() > 0.5f);
+    compare.prepare (sampleRate, samplesPerBlock, 0);
 
     // Nothing looks ahead and the Body filter is minimum phase, so there's no latency to report
     setLatencySamples (0);
@@ -147,7 +143,7 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
 
     if (work.getNumSamples() < n) // hosts shouldn't exceed the prepared size, but be safe
     {
-        for (auto* b : { &work, &wet, &dry }) b->setSize (2, n, false, false, true);
+        for (auto* b : { &work, &wet }) b->setSize (2, n, false, false, true);
         diMono.resize ((size_t) n);
         micMono.resize ((size_t) n);
     }
@@ -169,34 +165,34 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     // Everything runs in stereo internally; a mono input is duplicated
     work.copyFrom (0, 0, buffer, 0, 0, n);
     work.copyFrom (1, 0, buffer, inCh > 1 ? 1 : 0, 0, n);
-    dry.copyFrom (0, 0, work, 0, 0, n);
-    dry.copyFrom (1, 0, work, 1, 0, n);
-    inputDb.store (vs::ampToDb (work.getMagnitude (0, n)));
+    inputDb.store (vs::ampToDb (vs::channels::peakOf (work.getArrayOfReadPointers(), 2, n)));
 
     float* const* d = work.getArrayOfWritePointers();
+    compare.takeOriginal (d[0], d[1], n);
 
     // Learn listens to the untouched DI and the mic
-    for (int i = 0; i < n; ++i) diMono[(size_t) i] = 0.5f * (d[0][i] + d[1][i]);
+    float* diOut[1] { diMono.data() };
+    vs::channels::map (vs::channels::Map::mono, d, 2, n, diOut);
     float scPeak = 0.0f;
     if (scCh > 0)
-        for (int i = 0; i < n; ++i)
-        {
-            micMono[(size_t) i] = scCh > 1 ? 0.5f * (sc[0][i] + sc[1][i]) : sc[0][i];
-            scPeak = std::max (scPeak, std::abs (micMono[(size_t) i]));
-        }
+    {
+        float* micOut[1] { micMono.data() };
+        vs::channels::map (vs::channels::Map::mono, sc, scCh, n, micOut);
+        scPeak = vs::channels::peakOf (micOut, 1, n);
+    }
     sidechainDb.store (scCh > 0 ? vs::ampToDb (scPeak) : -100.0f);
     learner.process (diMono.data(), scCh > 0 ? micMono.data() : nullptr, n);
 
     // 1. Body (crossfades in and out; the filter only runs while it's heard)
-    bodyMix.setTargetValue (prm.bodyOn->load() > 0.5f ? 1.0f : 0.0f);
-    if (bodyMix.isSmoothing() || bodyMix.getTargetValue() > 0.5f)
+    bodyMix.setTarget (prm.bodyOn->load() > 0.5f ? 1.0f : 0.0f);
+    if (bodyMix.isRamping() || bodyMix.getTarget() > 0.5f)
     {
         if (bodyWasIdle) { body.reset(); bodyWasIdle = false; }
         wet.copyFrom (0, 0, work, 0, 0, n);
         wet.copyFrom (1, 0, work, 1, 0, n);
         body.process (wet.getArrayOfWritePointers(), n);
 
-        if (! bodyMix.isSmoothing())
+        if (! bodyMix.isRamping())
         {
             work.copyFrom (0, 0, wet, 0, 0, n);
             work.copyFrom (1, 0, wet, 1, 0, n);
@@ -205,7 +201,7 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         {
             for (int i = 0; i < n; ++i)
             {
-                const float m = bodyMix.getNextValue();
+                const float m = bodyMix.next();
                 for (int c = 0; c < 2; ++c) d[c][i] += m * (wet.getSample (c, i) - d[c][i]);
             }
         }
@@ -224,59 +220,26 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     doubler.process (d[0], d[1], n, prm.doubleOn->load() > 0.5f ? prm.width->load() : 0.0f);
 
     // 6. Output
-    outGain.setTargetValue (vs::dbToGain (prm.output->load()));
+    outGain.setTarget (vs::dbToGain (prm.output->load()));
     for (int i = 0; i < n; ++i)
     {
-        const float g = outGain.getNextValue();
+        const float g = outGain.next();
         d[0][i] *= g;
         d[1][i] *= g;
     }
 
     // "Hear Original" plays the untouched input at the processed sound's
-    // loudness (~0.4 s average), so the A/B is about tone, not volume.
-    {
-        auto blockPow = [n] (const juce::AudioBuffer<float>& b)
-        {
-            double s = 0.0;
-            for (int c = 0; c < 2; ++c)
-                for (int i = 0; i < n; ++i) s += (double) b.getSample (c, i) * b.getSample (c, i);
-            return (float) (s / (2.0 * n));
-        };
-        const float k = 1.0f - std::exp (-(float) n / (0.4f * (float) fs));
-        wetPow += k * (blockPow (work) - wetPow);
-        dryPow += k * (blockPow (dry) - dryPow);
-        if (wetPow > 1.0e-7f && dryPow > 1.0e-7f)
-            matchGain.setTargetValue (juce::jlimit (0.25f, 4.0f, std::sqrt (wetPow / dryPow)));
+    // loudness, so the A/B is about tone, not volume.
+    compare.setHearOriginal (prm.compare->load() > 0.5f);
+    compare.mix (d[0], d[1], n);
 
-        compareMix.setTargetValue (prm.compare->load() > 0.5f ? 1.0f : 0.0f);
-        if (compareMix.isSmoothing() || compareMix.getTargetValue() > 0.5f)
-        {
-            for (int i = 0; i < n; ++i)
-            {
-                const float m = compareMix.getNextValue(), g = matchGain.getNextValue();
-                for (int c = 0; c < 2; ++c) d[c][i] += m * (g * dry.getSample (c, i) - d[c][i]);
-            }
-        }
-        else
-        {
-            matchGain.skip (n);
-        }
-    }
-
-    if (outCh == 1)
-    {
-        buffer.copyFrom (0, 0, work.getReadPointer (0), n, 0.5f);
-        buffer.addFrom (0, 0, work.getReadPointer (1), n, 0.5f);
-    }
-    else
-    {
-        buffer.copyFrom (0, 0, work, 0, 0, n);
-        buffer.copyFrom (1, 0, work, 1, 0, n);
-    }
+    // A mono output gets the average of the two sides
+    vs::channels::map (outCh == 1 ? vs::channels::Map::mono : vs::channels::Map::keep,
+                       work.getArrayOfReadPointers(), 2, n, buffer.getArrayOfWritePointers());
     for (int c = outCh; c < buffer.getNumChannels(); ++c)
         buffer.clear (c, 0, n);
 
-    outputDb.store (vs::ampToDb (work.getMagnitude (0, n)));
+    outputDb.store (vs::ampToDb (vs::channels::peakOf (d, 2, n)));
 }
 
 //==============================================================================
@@ -347,7 +310,7 @@ void StrumProcessor::forgetLearned()
 // and with any user preset ("My guitar, mic") saved while it's there.
 void StrumProcessor::writeLearnedToState()
 {
-    if (learned.valid) apvts.state.setProperty (learnedKey, learned.toString(), nullptr);
+    if (learned.valid) apvts.state.setProperty (learnedKey, juce::String (learned.toString()), nullptr);
     else               apvts.state.removeProperty (learnedKey, nullptr);
 }
 
@@ -361,7 +324,7 @@ void StrumProcessor::valueTreeRedirected (juce::ValueTree&)
     const auto text = apvts.state.getProperty (learnedKey).toString();
     if (text.isNotEmpty())
     {
-        const auto c = vs::BodyCurve::fromString (text);
+        const auto c = vs::BodyCurve::fromString (text.toStdString());
         if (c.valid) learned = c;
     }
     else
@@ -404,7 +367,7 @@ void StrumProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     // The project's learned curve comes back with it (or none, if it had none)
     const juce::ScopedLock sl (designLock);
-    learned = vs::BodyCurve::fromString (apvts.state.getProperty (learnedKey).toString());
+    learned = vs::BodyCurve::fromString (apvts.state.getProperty (learnedKey).toString().toStdString());
     redesignBody (true);
 }
 

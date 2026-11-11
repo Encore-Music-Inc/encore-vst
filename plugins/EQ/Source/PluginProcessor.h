@@ -4,6 +4,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "dsp/Ramp.h"
 #include "dsp/EqBand.h"
 #include "dsp/Util.h"
 #include "ui/PresetManager.h"
@@ -93,7 +94,7 @@ private:
     vs::EqBand bands[numBands];
     vs::DynamicBand smart[numSmart];
     vs::Carve carve;
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> outGain;
+    vs::Ramp<true> outGain;
     std::vector<float> monoScratch;
     std::atomic<double> rate { 48000.0 };
     int currentProgram = 0;

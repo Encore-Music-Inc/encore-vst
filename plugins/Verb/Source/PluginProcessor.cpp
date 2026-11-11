@@ -79,7 +79,7 @@ void VerbProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     engine.prepare (sampleRate, samplesPerBlock);
     wet.setSize (2, samplesPerBlock);
     mixSmooth.reset (sampleRate, 0.05);
-    mixSmooth.setCurrentAndTargetValue (prm.mix->load());
+    mixSmooth.setCurrentAndTarget (prm.mix->load());
 }
 
 void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -113,11 +113,11 @@ void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     // Dry stays full up to 50% mix, wet reaches full at 50%: a send-style
     // curve where the middle of the knob is "both at full".
-    mixSmooth.setTargetValue (prm.mix->load());
+    mixSmooth.setTarget (prm.mix->load());
     float peak = 0.0f;
     for (int i = 0; i < n; ++i)
     {
-        const float m = mixSmooth.getNextValue();
+        const float m = mixSmooth.next();
         const float dry = std::min (1.0f, 2.0f * (1.0f - m)), wg = std::min (1.0f, 2.0f * m);
         const float wl = wet.getSample (0, i) * wg, wr = wet.getSample (1, i) * wg;
         peak = std::max ({ peak, std::abs (wl), std::abs (wr) });

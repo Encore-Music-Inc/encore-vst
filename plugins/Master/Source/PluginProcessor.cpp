@@ -22,14 +22,23 @@ namespace
         return s;
     }
 
+    // A style by the name people see, so a preset reads as what it selects
+    int styleNamed (const char* name)
+    {
+        for (int i = 0; i < MC::numStyles; ++i)
+            if (juce::String (MC::style (i).name) == name) return i;
+        jassertfalse;
+        return MC::universal;
+    }
+
     const std::vector<vs::FactoryPreset> presets
     {
         { "Default (Balanced, Streaming)", {} },
-        { "Folk / Acoustic",       { { "style", MC::universal }, { "intensity", 0.35 }, { "target", 0 } } },
-        { "Punk / Loud",           { { "style", MC::fire },      { "intensity", 0.6 }, { "target", 2 } } },
-        { "Emo / Big Chorus",      { { "style", MC::fire },      { "intensity", 0.45 }, { "target", 1 } } },
-        { "Lo-fi Demo",            { { "style", MC::tape },      { "intensity", 0.6 }, { "target", 0 }, { "tone_air", -1.5 } } },
-        { "Clear Vocal Mix",       { { "style", MC::clarity },   { "intensity", 0.5 }, { "target", 0 } } },
+        { "Folk / Acoustic",       { { "style", styleNamed ("Balanced") }, { "intensity", 0.35 }, { "target", 0 } } },
+        { "Punk / Loud",           { { "style", styleNamed ("Heavy") }, { "intensity", 0.6 }, { "target", 2 } } },
+        { "Emo / Big Chorus",      { { "style", styleNamed ("Heavy") }, { "intensity", 0.45 }, { "target", 1 } } },
+        { "Lo-fi Demo",            { { "style", styleNamed ("Warm") },  { "intensity", 0.6 }, { "target", 0 }, { "tone_air", -1.5 } } },
+        { "Clear Vocal Mix",       { { "style", styleNamed ("Bright") },{ "intensity", 0.5 }, { "target", 0 } } },
     };
 }
 
@@ -84,17 +93,9 @@ bool MasterProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 void MasterProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     chain.prepare (sampleRate, samplesPerBlock);
-    rawInMeter.prepare (sampleRate);
-    tpMeterOs.initProcessing ((size_t) samplesPerBlock);
-    tpScratch.setSize (2, samplesPerBlock);
-    original.setSize (2, samplesPerBlock);
-
-    origDelayLen = std::max (1, chain.getLatency());
-    for (auto& d : origDelay) d.assign ((size_t) origDelayLen, 0.0f);
-    origIdx = 0;
-    matchGain.reset (sampleRate, 0.5);
-    mix.reset (sampleRate, 0.03);
-    mix.setCurrentAndTargetValue (prm.compare->load() > 0.5f ? 0.0f : 1.0f);
+    compare.setHearOriginal (prm.compare->load() > 0.5f);
+    compare.prepare (sampleRate, samplesPerBlock, chain.getLatency());
+    tpMeter.prepare (2, samplesPerBlock);
     setLatencySamples (chain.getLatency());
 }
 
@@ -103,7 +104,6 @@ void MasterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
     if (n == 0 || buffer.getNumChannels() < 2) return;
-    if (original.getNumSamples() < n) { original.setSize (2, n, false, false, true); tpScratch.setSize (2, n, false, false, true); }
 
     if (learnRequested.exchange (false)) chain.startLearning();
 
@@ -119,45 +119,18 @@ void MasterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     for (int b = 0; b < MC::numTone; ++b) s.toneTrim[b] = prm.tone[b]->load();
     chain.setSettings (s);
 
-    // Keep a latency-aligned copy of the untouched input for the A/B
-    rawInMeter.process (buffer.getReadPointer (0), buffer.getReadPointer (1), n);
-    for (int c = 0; c < 2; ++c)
-    {
-        const float* in = buffer.getReadPointer (c);
-        float* o = original.getWritePointer (c);
-        int idx = origIdx;
-        for (int i = 0; i < n; ++i) { o[i] = origDelay[c][(size_t) idx]; origDelay[c][(size_t) idx] = in[i]; idx = (idx + 1) % origDelayLen; }
-    }
-    origIdx = (origIdx + n) % origDelayLen;
-
+    // "Hear Original" plays the unprocessed mix, latency-aligned and at the
+    // same loudness, so the comparison is about tone and punch, not volume.
+    compare.takeOriginal (buffer.getReadPointer (0), buffer.getReadPointer (1), n);
     chain.process (buffer.getWritePointer (0), buffer.getWritePointer (1), n);
-
-    // "Hear Original" plays the unprocessed mix at the *same loudness*, so
-    // the comparison is about tone and punch, not just volume.
-    const float outST = chain.outMeter.shortTerm.load(), inST = rawInMeter.shortTerm.load();
-    if (outST > -60.0f && inST > -60.0f) matchGain.setTargetValue (vs::dbToGain (juce::jlimit (-24.0f, 24.0f, outST - inST)));
-    mix.setTargetValue (prm.compare->load() > 0.5f ? 0.0f : 1.0f);
-    if (mix.isSmoothing() || mix.getTargetValue() < 0.5f)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            const float m = mix.getNextValue(), g = matchGain.getNextValue();
-            for (int c = 0; c < 2; ++c)
-            {
-                float* p = buffer.getWritePointer (c);
-                p[i] = p[i] * m + original.getSample (c, i) * g * (1.0f - m);
-            }
-        }
-    }
-    else
-    {
-        matchGain.skip (n);
-    }
+    const float outST = chain.outMeter.shortTerm.load();
+    compare.setHearOriginal (prm.compare->load() > 0.5f);
+    compare.mix (buffer.getWritePointer (0), buffer.getWritePointer (1), n, outST);
 
     // Meters
     outShortTerm = outST;
     outMomentary = chain.outMeter.momentary.load();
-    inShortTerm = inST;
+    inShortTerm = compare.originalShortTerm();
     limiterGrDb = chain.limiter.grDb.load();
     learnProgress = chain.learnProgress();
     learning = chain.isLearning();
@@ -165,14 +138,9 @@ void MasterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     learnedValid = chain.getLearned().valid;
     for (int b = 0; b < MC::numTone; ++b) toneNow[b] = chain.toneDbNow (b);
 
-    for (int c = 0; c < 2; ++c) tpScratch.copyFrom (c, 0, buffer, c, 0, n);
-    juce::dsp::AudioBlock<float> tb (tpScratch.getArrayOfWritePointers(), 2, (size_t) n);
-    auto up = tpMeterOs.processSamplesUp (tb);
-    float peak = 0.0f;
-    for (size_t c = 0; c < 2; ++c)
-        for (size_t i = 0; i < up.getNumSamples(); ++i) peak = std::max (peak, std::abs (up.getSample ((int) c, (int) i)));
-    if (peakHoldReset.exchange (false)) truePeakHoldDb = -100.0f;
-    truePeakHoldDb = std::max (truePeakHoldDb.load(), vs::ampToDb (peak));
+    if (peakHoldReset.exchange (false)) tpMeter.reset();
+    tpMeter.process (buffer.getArrayOfReadPointers(), n);
+    truePeakHoldDb = std::max (-100.0f, tpMeter.truePeakDb());
 
     // When learning finishes, flag it so the UI thread copies the result
     // into the plugin state (it's also copied on every project save)

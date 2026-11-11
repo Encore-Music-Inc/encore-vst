@@ -43,6 +43,7 @@ their Windows and Mac installers and their tests.
 | `CHANGELOG.md` | every release's notes, newest first; the release job copies the version's section onto the GitHub release |
 | `.github/release-notes.sh` | prints a version's notes from `CHANGELOG.md`, and fails if they're missing (CI runs it on every build) |
 | `.github/pins/check.sh` | CI's check that every pin is a release (the README's Pinned releases table) |
+| `.github/no-audio-processing.sh` | CI's check that the plugins keep no audio processing of their own |
 | `build-and-install.ps1`, `Install ENCORE Plugins.cmd` | Windows: build, test and install locally |
 | `.github/workflows/ci.yml` | pull requests: Linux x64, Windows x64 and macOS (Apple Silicon), build, tests and pluginval, no packaging (skipped when only docs change, or only the version line and `CHANGELOG.md`); main and manual runs: Windows x64 with the installer, macOS universal with the .pkg, Linux x64 and arm64, as artifacts; on a schedule: strictest pluginval and sanitizers; `v*` tags: attach main's files to the Release, no rebuild; "CI passed" is the one check to require |
 | `.github/sanitizers/` | the scheduled sanitizer run's exceptions (`ubsan.supp`, each with its reason; keep it short) and `report.sh` |
@@ -59,9 +60,18 @@ their Windows and Mac installers and their tests.
   `#include "dsp/MasterChain.h"` resolves. Don't copy the audio processing
   headers back into this repo: change them in encore-audio-processing, release
   it, then move the pin here in a pull request.
+- All audio processing lives in encore-audio-processing; the plugins keep none
+  of their own, not even a small helper, and don't use JUCE's processing
+  classes (filters, smoothers, oversampling, FFT, levels) in its place. That
+  includes what an editor draws from the sound (a spectrum, a curve, the
+  reflections): it reads the values from the headers. When something is
+  missing there, add it there first. `.github/no-audio-processing.sh` (in CI)
+  fails on processing-shaped code in `plugins/` and `shared/`.
 - `StrumTests` is built from `external/encore-audio-processing/tests/StrumTests.cpp`
-  with `ENCORE_STRUM_PLUGIN_TESTS=1`. The other audio processing suites run in
-  that repo, not here.
+  with `ENCORE_STRUM_PLUGIN_TESTS=1`, and `ReferenceTests` from its
+  `tests/ReferenceTests.cpp` with the plugins' compiler and flags (it checks
+  every result in its `data/reference.json`). The other audio processing
+  suites run in that repo, not here.
 
 ## Pins
 

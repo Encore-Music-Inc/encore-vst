@@ -66,7 +66,7 @@ void VerbEditor::paint (juce::Graphics& g)
 }
 
 // A picture of the reverb you've dialled in: the pre-delay gap, early
-// reflections (in the modes that have them), then the decay to -60 dB.
+// reflections (in the modes that have them, from the engine), then the decay to -60 dB.
 void VerbEditor::drawShape (juce::Graphics& g, juce::Rectangle<float> r)
 {
     auto value = [this] (const char* id) { return proc.apvts.getRawParameterValue (id)->load(); };
@@ -111,16 +111,15 @@ void VerbEditor::drawShape (juce::Graphics& g, juce::Rectangle<float> r)
     g.setColour (theme::accent);
     g.strokePath (tail, juce::PathStrokeType (1.5f));
 
-    // early reflections
-    if (mode == 0 || mode == 1 || mode == 3)
+    // early reflections, as the engine plays them (each line at its level)
+    const auto er = vs::ReverbEngine::earlyReflections (mode, value ("size"));
+    if (er.level > 0.0f)
     {
-        const float scale = (mode == 3 ? 1.9f : mode == 1 ? 1.3f : 0.8f) * (0.55f + 0.9f * value ("size"));
-        static const float tapMs[] { 3.1f, 5.3f, 7.9f, 10.7f, 13.9f, 17.3f, 21.1f, 25.7f, 30.3f, 35.9f, 41.3f, 47.9f };
         g.setColour (theme::text.withAlpha (0.7f));
-        for (int t = 0; t < 12; ++t)
+        for (const auto& t : er.taps)
         {
-            const float x = toX (pre + tapMs[t] * scale / 1000.0f);
-            g.drawVerticalLine ((int) x, toY (-3.0f - 2.5f * (float) t), r.getBottom());
+            const float x = toX (pre + t.ms / 1000.0f);
+            g.drawVerticalLine ((int) x, toY (vs::ampToDb (er.level * std::max (t.gainL, t.gainR))), r.getBottom());
         }
     }
 
