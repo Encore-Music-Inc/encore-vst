@@ -64,7 +64,9 @@ their Windows and Mac installers and their tests.
   of their own, not even a small helper, and don't use JUCE's processing
   classes (filters, smoothers, oversampling, FFT, levels) in its place. That
   includes what an editor draws from the sound (a spectrum, a curve, the
-  reflections): it reads the values from the headers. When something is
+  reflections) and how its meters move: it reads the values from the headers.
+  The factory presets are that repository's list too (`dsp/Presets.h`, made
+  by its `tools/presets.py`): change a preset there. When something is
   missing there, add it there first. `.github/no-audio-processing.sh` (in CI)
   fails on processing-shaped code in `plugins/` and `shared/`.
 - `StrumTests` is built from `external/encore-audio-processing/tests/StrumTests.cpp`

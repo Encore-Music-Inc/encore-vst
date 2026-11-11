@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Meters.h"
 #include "dsp/Music.h"
 
 namespace colours = vs::theme;
@@ -207,18 +208,13 @@ void VocalSuiteEditor::drawMeter (juce::Graphics& g, juce::Rectangle<int> r, con
 
 void VocalSuiteEditor::timerCallback()
 {
-    // Fast attack, slow fall so the meters are readable
-    auto ballistics = [] (float& shown, float target, bool upIsAttack)
-    {
-        const bool attack = upIsAttack ? target > shown : target < shown;
-        shown += (attack ? 0.6f : 0.12f) * (target - shown);
-    };
-
-    ballistics (mIn, proc.inputDb.load(), true);
-    ballistics (mOut, proc.outputDb.load(), true);
-    ballistics (mDeess, proc.deEssDb().load(), true);
-    ballistics (mComp, proc.compDb().load(), true);
-    mRide += 0.3f * (proc.riderDb().load() - mRide);
+    // ENCORE.'s meter ballistics (fast rise, slow fall) so the meters are readable
+    namespace vm = vs::meters;
+    vm::step (mIn, proc.inputDb.load(), vm::level);
+    vm::step (mOut, proc.outputDb.load(), vm::level);
+    vm::step (mDeess, proc.deEssDb().load(), vm::level);
+    vm::step (mComp, proc.compDb().load(), vm::level);
+    vm::step (mRide, proc.riderDb().load(), vm::steady);
 
     // the project or another instance may have changed the preset
     if (proc.presetManager.getCurrentName() != lastPresetName)

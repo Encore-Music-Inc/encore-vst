@@ -4,6 +4,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "dsp/Mix.h"
 #include "dsp/Ramp.h"
 #include "dsp/Channels.h"
 #include "dsp/Rider.h"
@@ -15,6 +16,7 @@
 #include "dsp/VocalEq.h"
 #include "dsp/PitchEngine.h"
 #include "ui/PresetManager.h"
+#include "ui/FactoryPresets.h"
 
 class VocalSuiteProcessor : public EncoreProcessorBase
 {

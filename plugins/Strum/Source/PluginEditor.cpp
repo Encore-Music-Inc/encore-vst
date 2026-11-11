@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Meters.h"
 
 namespace theme = vs::theme;
 
@@ -309,9 +310,8 @@ void StrumEditor::drawMeter (juce::Graphics& g, juce::Rectangle<int> r, const ju
 
 void StrumEditor::timerCallback()
 {
-    auto ballistics = [] (float& shown, float target) { shown += (target > shown ? 0.6f : 0.12f) * (target - shown); };
-    ballistics (mIn, proc.inputDb.load());
-    ballistics (mOut, proc.outputDb.load());
+    vs::meters::step (mIn, proc.inputDb.load(), vs::meters::level);
+    vs::meters::step (mOut, proc.outputDb.load(), vs::meters::level);
 
     const auto& L = proc.getLearner();
     if (L.isLearning())

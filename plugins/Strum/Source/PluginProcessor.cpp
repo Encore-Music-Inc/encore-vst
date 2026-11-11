@@ -10,19 +10,8 @@ namespace
 
     const juce::StringArray curveNames { "Generic", "Learned" };
 
-    // Starting points, not finished sounds. Anything not listed falls back to
-    // the parameter's default (the first preset is all defaults).
-    const std::vector<vs::FactoryPreset> presets
-    {
-        { "Miked, gentle cleanup", {} },
-        { "Miked, boomy soundhole", { { "boom", 0.75 }, { "squeak", 0.4 }, { "pick", 0.3 } } },
-        { "DI to mic (generic)",    { { "body_on", 1 }, { "body_curve", 0 }, { "body_amount", 1.0 }, { "boom_on", 0 },
-                                      { "squeak", 0.4 }, { "pick", 0.35 } } },
-        { "DI to mic (learned)",    { { "body_on", 1 }, { "body_curve", 1 }, { "body_amount", 1.0 }, { "boom_on", 0 },
-                                      { "squeak", 0.4 }, { "pick", 0.3 } } },
-        { "Strummed, wide double",  { { "boom", 0.4 }, { "squeak", 0.4 }, { "pick", 0.45 }, { "double_on", 1 }, { "width", 0.7 } } },
-        { "Fingerpicked, de-squeak", { { "boom", 0.35 }, { "squeak", 0.75 }, { "pick_on", 0 } } },
-    };
+    // The factory presets: encore-audio-processing's list for this chain (dsp/Presets.h)
+    const std::vector<vs::presets::Preset>& presets = vs::presets::forChain ("strum");
 
     const char* learnedKey = "learnedCurve";
 }
@@ -199,11 +188,7 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         }
         else
         {
-            for (int i = 0; i < n; ++i)
-            {
-                const float m = bodyMix.next();
-                for (int c = 0; c < 2; ++c) d[c][i] += m * (wet.getSample (c, i) - d[c][i]);
-            }
+            vs::mix::crossfadeTo (bodyMix, d, wet.getArrayOfReadPointers(), 2, n);
         }
     }
     else
@@ -221,12 +206,7 @@ void StrumProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
 
     // 6. Output
     outGain.setTarget (vs::dbToGain (prm.output->load()));
-    for (int i = 0; i < n; ++i)
-    {
-        const float g = outGain.next();
-        d[0][i] *= g;
-        d[1][i] *= g;
-    }
+    vs::mix::applyGain (outGain, d, 2, n);
 
     // "Hear Original" plays the untouched input at the processed sound's
     // loudness, so the A/B is about tone, not volume.

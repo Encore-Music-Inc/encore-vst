@@ -19,26 +19,8 @@ namespace
     };
     const float smartDefaults[EqProcessor::numSmart] { 300.0f, 1200.0f, 3000.0f, 7000.0f };
 
-    // Starting points by source; the gain moves are deliberately modest.
-    const std::vector<vs::FactoryPreset> presets
-    {
-        { "Flat", {} },
-        { "Vocal Clean-Up", { { "b1_on", 1 }, { "b1_freq", 90 }, { "b2_gain", -1.5 }, { "b3_gain", -2 }, { "b3_freq", 300 },
-                              { "b5_gain", 1.5 }, { "b5_freq", 3200 }, { "b7_gain", 2 }, { "b7_freq", 11000 } } },
-        { "Acoustic Guitar", { { "b1_on", 1 }, { "b1_freq", 70 }, { "b2_gain", -2 }, { "b2_freq", 150 }, { "b3_gain", -2.5 }, { "b3_freq", 220 }, { "b3_q", 1.4 },
-                               { "b6_gain", 1.5 }, { "b6_freq", 5000 }, { "b7_gain", 2.5 }, { "b7_freq", 12000 } } },
-        { "Punk Guitar Wall", { { "b1_on", 1 }, { "b1_freq", 90 }, { "b3_gain", -3 }, { "b3_freq", 400 }, { "b3_q", 1.2 },
-                                { "b5_gain", 1.5 }, { "b5_freq", 1800 }, { "b8_on", 1 }, { "b8_freq", 11000 } } },
-        { "Kick Punch", { { "b1_on", 1 }, { "b1_freq", 35 }, { "b2_freq", 60 }, { "b2_gain", 2.5 }, { "b3_gain", -4 }, { "b3_freq", 350 }, { "b3_q", 1.5 },
-                          { "b5_gain", 3 }, { "b5_freq", 3500 }, { "b5_q", 1.5 } } },
-        { "Snare Crack", { { "b1_on", 1 }, { "b1_freq", 80 }, { "b3_freq", 200 }, { "b3_gain", 2 }, { "b4_freq", 900 }, { "b4_gain", -2.5 },
-                           { "b6_freq", 5500 }, { "b6_gain", 2.5 } } },
-        { "Bass Tight", { { "b1_on", 1 }, { "b1_freq", 35 }, { "b2_freq", 80 }, { "b2_gain", 1.5 }, { "b3_freq", 250 }, { "b3_gain", -2.5 },
-                          { "b5_freq", 1500 }, { "b5_gain", 2 }, { "b8_on", 1 }, { "b8_freq", 9000 } } },
-        { "Guitars Carved by Vocal", { { "b1_on", 1 }, { "b1_freq", 90 }, { "carve_on", 1 }, { "carve_depth", 5 }, { "carve_low", 250 }, { "carve_high", 6000 } } },
-        { "Harsh Scream Tamer", { { "s1_on", 1 }, { "s1_freq", 2800 }, { "s1_range", 6 }, { "s1_thresh", -14 }, { "s2_on", 1 }, { "s2_freq", 4500 },
-                                  { "s2_range", 6 }, { "s2_thresh", -16 }, { "b1_on", 1 }, { "b1_freq", 100 } } },
-    };
+    // The factory presets: encore-audio-processing's list for this chain (dsp/Presets.h)
+    const std::vector<vs::presets::Preset>& presets = vs::presets::forChain ("equalize");
 }
 
 EqProcessor::EqProcessor()
@@ -231,11 +213,7 @@ void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuff
     }
 
     outGain.setTarget (vs::dbToGain (outputP->load()));
-    for (int i = 0; i < n; ++i)
-    {
-        const float g = outGain.next();
-        for (int c = 0; c < nch; ++c) d[c][i] *= g;
-    }
+    vs::mix::applyGain (outGain, d, nch, n);
 
     for (int s = 0; s < numSmart; ++s) smartCutDb[s].store (smart[s].currentCutDb());
     for (int k = 0; k < vs::Carve::numBands; ++k) carveGainDb[k].store (carve.bandGainDb (k));

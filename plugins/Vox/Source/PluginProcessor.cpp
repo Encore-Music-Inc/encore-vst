@@ -17,70 +17,8 @@ namespace
     const juce::StringArray delayTimes { "Slap", "1/16", "1/8", "Dotted 1/8", "1/4", "1/2" };
     const juce::StringArray compStyles { "Smooth", "Punchy", "Slam" };
 
-    struct Preset
-    {
-        const char* name;
-        std::vector<std::pair<const char*, double>> values; // double so integer literals convert cleanly
-    };
-
-    // Starting points, not finished mixes. Anything not listed falls back to
-    // the parameter's default. Choice values are list indexes.
-    const std::vector<Preset> presets
-    {
-        { "Clean Start", {} },
-        { "Folk Intimate", {
-            { "ride_target", -20 }, { "ride_range", 5 }, { "ride_speed", 0.35f },
-            { "hpf", 70 }, { "deess", 0.35f }, { "deess_freq", 6500 },
-            { "drive", 0.1f }, { "low", 1 }, { "body", -1 }, { "presence", 1.5f }, { "air", 2.5f },
-            { "comp", 0.3f }, { "comp_style", 0 },
-            { "verb", 0.22f }, { "verb_size", 0.55f }, { "delay", 0 } } },
-        { "Punk Shout", {
-            { "ride_target", -16 }, { "ride_range", 8 }, { "ride_speed", 0.7f },
-            { "hpf", 110 }, { "gate", -55 }, { "deess", 0.45f }, { "deess_freq", 5500 },
-            { "drive", 0.45f }, { "low", -1 }, { "body", -2 }, { "presence", 3 }, { "air", 1 },
-            { "comp", 0.6f }, { "comp_style", 1 },
-            { "verb", 0.08f }, { "verb_size", 0.3f }, { "delay", 0.15f }, { "delay_time", 0 }, { "delay_fb", 0.1f } } },
-        { "Emo Lead", {
-            { "ride_target", -17 }, { "ride_range", 7 }, { "ride_speed", 0.55f },
-            { "hpf", 90 }, { "gate", -65 }, { "deess", 0.45f }, { "deess_freq", 6500 },
-            { "drive", 0.25f }, { "body", -2 }, { "presence", 2 }, { "air", 3 },
-            { "comp", 0.5f }, { "comp_style", 1 },
-            { "verb", 0.22f }, { "verb_size", 0.6f }, { "delay", 0.18f }, { "delay_time", 3 }, { "delay_fb", 0.3f } } },
-        { "Scream Control", {
-            { "ride_target", -16 }, { "ride_range", 10 }, { "ride_speed", 0.85f },
-            { "hpf", 120 }, { "gate", -50 }, { "deess", 0.3f }, { "deess_freq", 5000 },
-            { "drive", 0.55f }, { "low", -2 }, { "body", -3 }, { "presence", 1.5f },
-            { "comp", 0.75f }, { "comp_style", 2 },
-            { "verb", 0.1f }, { "verb_size", 0.35f }, { "delay", 0.1f }, { "delay_time", 0 }, { "delay_fb", 0.05f } } },
-        { "Backing Vocals", {
-            { "ride_target", -22 }, { "ride_range", 6 }, { "ride_speed", 0.4f },
-            { "hpf", 150 }, { "gate", -60 }, { "deess", 0.6f }, { "deess_freq", 7000 },
-            { "drive", 0.1f }, { "low", -3 }, { "body", -2 }, { "presence", -1 }, { "air", 2 },
-            { "comp", 0.5f }, { "comp_style", 0 },
-            { "verb", 0.3f }, { "verb_size", 0.6f }, { "delay", 0 } } },
-        // Pitch presets: set Key and Scale to the song for Tune/Harmony to land right
-        { "Folk Harmony", {
-            { "ride_target", -20 }, { "ride_range", 5 }, { "ride_speed", 0.35f },
-            { "hpf", 70 }, { "deess", 0.35f }, { "deess_freq", 6500 },
-            { "drive", 0.1f }, { "low", 1 }, { "body", -1 }, { "presence", 1.5f }, { "air", 2.5f },
-            { "comp", 0.3f }, { "comp_style", 0 },
-            { "verb", 0.25f }, { "verb_size", 0.55f }, { "delay", 0 },
-            { "scale", 1 }, { "tune_on", 1 }, { "tune_speed", 120 }, { "tune_amount", 0.5f },
-            { "harm_on", 1 }, { "h1_int", 7 }, { "h1_level", -9 }, { "h1_pan", -0.35f }, { "h2_int", 0 }, { "humanize", 0.6f } } },
-        { "Punk Gang Double", {
-            { "ride_target", -16 }, { "ride_range", 8 }, { "ride_speed", 0.7f },
-            { "hpf", 110 }, { "gate", -55 }, { "deess", 0.45f }, { "deess_freq", 5500 },
-            { "drive", 0.45f }, { "low", -1 }, { "body", -2 }, { "presence", 3 }, { "air", 1 },
-            { "comp", 0.6f }, { "comp_style", 1 },
-            { "verb", 0.1f }, { "verb_size", 0.35f }, { "delay", 0 },
-            { "harm_on", 1 }, { "h1_int", 1 }, { "h1_level", -5 }, { "h1_pan", -0.8f },
-            { "h2_int", 1 }, { "h2_level", -5 }, { "h2_pan", 0.8f }, { "humanize", 0.8f } } },
-        { "Hard Tune", {
-            { "tune_on", 1 }, { "tune_speed", 0 }, { "tune_amount", 1 },
-            { "drive", 0.2f }, { "presence", 2 }, { "air", 2 },
-            { "comp", 0.5f }, { "comp_style", 1 },
-            { "verb", 0.15f }, { "delay", 0.15f }, { "delay_time", 2 }, { "delay_fb", 0.25f } } },
-    };
+    // The factory presets: encore-audio-processing's list for this chain (dsp/Presets.h)
+    const std::vector<vs::presets::Preset>& presets = vs::presets::forChain ("vox");
 }
 
 VocalSuiteProcessor::VocalSuiteProcessor()
@@ -365,11 +303,8 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         if (auto* ph = getPlayHead())
             if (auto pos = ph->getPosition())
                 if (auto b = pos->getBpm())
-                    bpm = juce::jlimit (30.0, 300.0, *b);
-
-        static constexpr float beats[] = { 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
-        const int t = juce::jlimit (0, 5, (int) prm.delayTime->load());
-        const float seconds = t == 0 ? 0.095f : (float) (60.0 / bpm) * beats[t];
+                    bpm = *b;
+        const float seconds = vs::Space::delaySeconds ((int) prm.delayTime->load(), bpm);
 
         space.setParams (prm.verb->load(), prm.verbSize->load(), prm.delay->load(), seconds, prm.delayFb->load());
         space.process (d, n, spaceOn);
@@ -377,12 +312,7 @@ void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     // 8. Output
     outGain.setTarget (vs::dbToGain (prm.output->load()));
-    for (int i = 0; i < n; ++i)
-    {
-        const float g = outGain.next();
-        d[0][i] *= g;
-        d[1][i] *= g;
-    }
+    vs::mix::applyGain (outGain, d, 2, n);
 
     // A mono output gets the average of the two sides
     vs::channels::map (outCh == 1 ? vs::channels::Map::mono : vs::channels::Map::keep,
@@ -412,24 +342,7 @@ void VocalSuiteProcessor::applyPreset (int index)
 {
     if (! juce::isPositiveAndBelow (index, (int) presets.size())) return;
     currentProgram = index;
-
-    for (auto* param : getParameters())
-    {
-        auto* withId = dynamic_cast<juce::RangedAudioParameter*> (param);
-        if (withId == nullptr) continue;
-
-        float value = withId->convertFrom0to1 (withId->getDefaultValue());
-        for (auto& [id, v] : presets[(size_t) index].values)
-            if (withId->paramID == id)
-                value = (float) v;
-
-        withId->setValueNotifyingHost (withId->convertTo0to1 (value));
-    }
-
-    // Hosts may call this from the audio thread; the name lives in the state
-    // tree, which is only safe to touch from the message thread.
-    if (juce::MessageManager::existsAndIsCurrentThread())
-        presetManager.setCurrent (presets[(size_t) index].name, false);
+    vs::applyFactoryPreset (*this, presetManager, presets[(size_t) index]);
 }
 
 juce::StringArray VocalSuiteProcessor::getFactoryPresetNames()

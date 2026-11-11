@@ -164,13 +164,13 @@ void EqEditor::assignResonance (const EqDisplay::Resonance& r)
         param->setValueNotifyingHost (param->convertTo0to1 (v));
         param->endChangeGesture();
     };
+    // the band that tames it, by encore-audio-processing's rule (vs::bandFor)
+    const auto band = vs::bandFor (r);
     const auto pre = "s" + juce::String (target + 1) + "_";
-    set (pre + "freq", r.freq);
-    set (pre + "q", 5.0f);
-    set (pre + "range", juce::jlimit (3.0f, 9.0f, r.prominenceDb));
-    // threshold sits below the ring's usual level in proportion to how much it
-    // sticks out, so a steady ring is clearly tamed and louder moments more so
-    set (pre + "thresh", juce::jlimit (-40.0f, 0.0f, r.relDb - 0.5f * r.prominenceDb));
+    set (pre + "freq", band.freq);
+    set (pre + "q", band.q);
+    set (pre + "range", band.rangeDb);
+    set (pre + "thresh", band.thresholdDb);
     set (pre + "on", 1.0f);
     selectSmart (target);
 }

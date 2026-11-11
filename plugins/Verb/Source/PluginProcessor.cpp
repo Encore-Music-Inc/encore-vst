@@ -10,18 +10,8 @@ namespace
 
     const juce::StringArray modeNames { "Room", "Chamber", "Plate", "Hall", "Huge", "Spring" };
 
-    const std::vector<vs::FactoryPreset> presets
-    {
-        { "Clean Start", {} },
-        { "Vocal Plate",       { { "mode", 2 }, { "mix", 0.25f }, { "predelay", 30 }, { "decay", 1.8f }, { "size", 0.5f }, { "tone", 9000 }, { "lowcut", 250 }, { "mod", 0.3f }, { "duck", 0.3f } } },
-        { "Snare Room",        { { "mode", 0 }, { "mix", 0.2f }, { "predelay", 0 }, { "decay", 0.8f }, { "size", 0.35f }, { "tone", 7000 }, { "lowcut", 200 }, { "width", 1.1f }, { "mod", 0.15f } } },
-        { "Ballad Chamber",    { { "mode", 1 }, { "mix", 0.25f }, { "predelay", 15 }, { "decay", 1.6f }, { "size", 0.6f }, { "tone", 7500 }, { "lowcut", 200 } } },
-        { "Big Hall",          { { "mode", 3 }, { "mix", 0.3f }, { "predelay", 25 }, { "decay", 3.2f }, { "size", 0.75f }, { "tone", 6500 }, { "lowcut", 180 }, { "width", 1.2f }, { "mod", 0.35f } } },
-        { "Ducked Vocal Hall", { { "mode", 3 }, { "mix", 0.3f }, { "predelay", 60 }, { "decay", 2.8f }, { "size", 0.65f }, { "tone", 7000 }, { "lowcut", 250 }, { "duck", 0.7f } } },
-        { "Emo Ambient",       { { "mode", 4 }, { "mix", 0.35f }, { "predelay", 40 }, { "decay", 8.0f }, { "size", 0.9f }, { "tone", 6000 }, { "lowcut", 300 }, { "width", 1.3f }, { "mod", 0.6f }, { "duck", 0.4f }, { "shimmer", 0.35f } } },
-        { "Surf Spring",       { { "mode", 5 }, { "mix", 0.35f }, { "predelay", 0 }, { "decay", 2.5f }, { "size", 0.5f }, { "tone", 4500 }, { "lowcut", 200 } } },
-        { "Lo-fi Spring Vox",  { { "mode", 5 }, { "mix", 0.2f }, { "predelay", 10 }, { "decay", 1.2f }, { "size", 0.3f }, { "tone", 3500 }, { "lowcut", 400 } } },
-    };
+    // The factory presets: encore-audio-processing's list for this chain (dsp/Presets.h)
+    const std::vector<vs::presets::Preset>& presets = vs::presets::forChain ("verb");
 }
 
 VerbProcessor::VerbProcessor()
@@ -111,25 +101,11 @@ void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     const float* inR = buffer.getReadPointer (buffer.getNumChannels() > 1 && outCh > 1 ? 1 : 0);
     engine.process (inL, inR, wet.getWritePointer (0), wet.getWritePointer (1), n);
 
-    // Dry stays full up to 50% mix, wet reaches full at 50%: a send-style
-    // curve where the middle of the knob is "both at full".
+    // The mix knob by encore-audio-processing's send law: dry stays full up
+    // to the middle, wet reaches full there, so the middle is "both at full"
     mixSmooth.setTarget (prm.mix->load());
-    float peak = 0.0f;
-    for (int i = 0; i < n; ++i)
-    {
-        const float m = mixSmooth.next();
-        const float dry = std::min (1.0f, 2.0f * (1.0f - m)), wg = std::min (1.0f, 2.0f * m);
-        const float wl = wet.getSample (0, i) * wg, wr = wet.getSample (1, i) * wg;
-        peak = std::max ({ peak, std::abs (wl), std::abs (wr) });
-
-        if (outCh == 1)
-            buffer.setSample (0, i, buffer.getSample (0, i) * dry + 0.5f * (wl + wr));
-        else
-        {
-            buffer.setSample (0, i, buffer.getSample (0, i) * dry + wl);
-            buffer.setSample (1, i, buffer.getSample (1, i) * dry + wr);
-        }
-    }
+    const float peak = vs::mix::sendMix (mixSmooth, buffer.getArrayOfWritePointers(), outCh == 1 ? 1 : 2,
+                                         wet.getReadPointer (0), wet.getReadPointer (1), n);
     wetDb.store (vs::ampToDb (peak));
 }
 

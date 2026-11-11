@@ -12,6 +12,8 @@ cd "$(dirname "$0")/.."
 pattern='juce::dsp::(IIR|FIR|FFT|Oversampling|Convolution|StateVariable[A-Za-z]*|LinkwitzRiley[A-Za-z]*|Compressor|Limiter|Reverb|Gain|Panner|WindowingFunction|DelayLine|Chorus|Phaser|LadderFilter|ProcessorDuplicator|BallisticsFilter|NoiseGate|WaveShaper|Bias|DryWetMixer)\b'
 pattern+='|juce::(SmoothedValue|LinearSmoothedValue|Reverb|IIRFilter|IIRCoefficients|LagrangeInterpolator|CatmullRomInterpolator|WindowedSincInterpolator|Decibels)\b'
 pattern+='|\.(getMagnitude|getRMSLevel|applyGainRamp)\s*\('
+# hand-written gain and mix loops (a channel's samples scaled or blended one by one)
+pattern+='|\]\[i\]\s*\*=|\]\[i\]\s*\+=\s*[a-z]+\s*\*\s*\('
 
 if hits=$(grep -rnE "$pattern" plugins shared --include='*.cpp' --include='*.h'); then
     echo "$hits"
