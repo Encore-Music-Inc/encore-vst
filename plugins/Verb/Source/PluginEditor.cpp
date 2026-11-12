@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Meters.h"
 
 namespace theme = vs::theme;
 
@@ -134,7 +135,7 @@ void VerbEditor::drawShape (juce::Graphics& g, juce::Rectangle<float> r)
 void VerbEditor::timerCallback()
 {
     const float w = proc.wetDb.load();
-    shownWet += (w > shownWet ? 0.6f : 0.1f) * (w - shownWet);
+    vs::meters::step (shownWet, w, vs::meters::level);
 
     if (proc.presetManager.getCurrentName() != lastPresetName)
     {

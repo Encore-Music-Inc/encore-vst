@@ -9,8 +9,8 @@ namespace
     juce::String dB (float v)  { return (v > 0.05f ? "+" : "") + juce::String (v, 1) + " dB"; }
     juce::String pct (float v) { return juce::String (juce::roundToInt (v * 100.0f)) + "%"; }
 
+    // The loudness targets' names, in the order of encore-audio-processing's list (MasterChain::targets)
     const juce::StringArray targetNames { "Streaming -14", "Balanced -11", "Loud -9" };
-    const float targetLufs[] { -14.0f, -11.0f, -9.0f };
 
     // Only the styles fitted to measured reference masters are offered for now
     constexpr int offeredStyles = 4;
@@ -22,24 +22,8 @@ namespace
         return s;
     }
 
-    // A style by the name people see, so a preset reads as what it selects
-    int styleNamed (const char* name)
-    {
-        for (int i = 0; i < MC::numStyles; ++i)
-            if (juce::String (MC::style (i).name) == name) return i;
-        jassertfalse;
-        return MC::universal;
-    }
-
-    const std::vector<vs::FactoryPreset> presets
-    {
-        { "Default (Balanced, Streaming)", {} },
-        { "Folk / Acoustic",       { { "style", styleNamed ("Balanced") }, { "intensity", 0.35 }, { "target", 0 } } },
-        { "Punk / Loud",           { { "style", styleNamed ("Heavy") }, { "intensity", 0.6 }, { "target", 2 } } },
-        { "Emo / Big Chorus",      { { "style", styleNamed ("Heavy") }, { "intensity", 0.45 }, { "target", 1 } } },
-        { "Lo-fi Demo",            { { "style", styleNamed ("Warm") },  { "intensity", 0.6 }, { "target", 0 }, { "tone_air", -1.5 } } },
-        { "Clear Vocal Mix",       { { "style", styleNamed ("Bright") },{ "intensity", 0.5 }, { "target", 0 } } },
-    };
+    // The factory presets: encore-audio-processing's list for this chain (dsp/Presets.h)
+    const std::vector<vs::presets::Preset>& presets = vs::presets::forChain ("master");
 }
 
 MasterProcessor::MasterProcessor()
@@ -111,7 +95,7 @@ void MasterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     s.style = (int) prm.style->load();
     s.intensity = prm.intensity->load();
     s.inputGainDb = prm.input->load();
-    s.targetLufs = targetLufs[juce::jlimit (0, 2, (int) prm.target->load())];
+    s.targetLufs = MC::targetLufs ((int) prm.target->load());
     s.ceilingDb = prm.ceiling->load();
     s.glue = prm.glue->load();
     s.widthTrim = prm.width->load();

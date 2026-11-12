@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Meters.h"
 
 namespace theme = vs::theme;
 
@@ -164,7 +165,7 @@ void MasterEditor::drawMeters (juce::Graphics& g, juce::Rectangle<int> area)
         g.drawText ("LUFS", row, juce::Justification::bottomRight);
     };
 
-    const float target = std::array<float, 3> { -14.0f, -11.0f, -9.0f }[(size_t) juce::jlimit (0, 2, (int) proc.apvts.getRawParameterValue ("target")->load())];
+    const float target = vs::MasterChain::targetLufs ((int) proc.apvts.getRawParameterValue ("target")->load());
     const float st = proc.outShortTerm.load();
     const juce::Colour stCol = st < -70.0f ? theme::dim : std::abs (st - target) < 1.5f ? theme::green : theme::text;
     big ("LOUDNESS NOW (short-term)", st, stCol, 64.0f);
@@ -233,7 +234,10 @@ void MasterEditor::timerCallback()
     if (proc.learnedChanged.exchange (false)) proc.syncLearnedToState();
 
     const float gr = proc.limiterGrDb.load();
-    shownGr += (gr < shownGr ? 0.6f : 0.08f) * (gr - shownGr);
+    // the reduction (shown as an amount) by ENCORE.'s gain-reduction ballistics
+    float amount = -shownGr;
+    vs::meters::step (amount, -gr, vs::meters::gainReduction);
+    shownGr = -amount;
 
     if (proc.presetManager.getCurrentName() != lastPresetName)
     {

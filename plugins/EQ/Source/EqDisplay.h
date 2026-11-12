@@ -212,10 +212,10 @@ private:
 
     static juce::String id (const char* prefix, int i, const char* what) { return juce::String (prefix) + juce::String (i + 1) + "_" + what; }
 
-    float xFor (float f) const { return plot.getX() + plot.getWidth() * std::log (f / 20.0f) / std::log (1000.0f); }
-    float freqFor (float x) const { return 20.0f * std::pow (1000.0f, (x - plot.getX()) / plot.getWidth()); }
-    float yFor (float db) const { return plot.getCentreY() - plot.getHeight() * 0.5f * db / 24.0f; }
-    float dbFor (float y) const { return (plot.getCentreY() - y) / (plot.getHeight() * 0.5f) * 24.0f; }
+    float xFor (float f) const { return plot.getX() + plot.getWidth() * vs::axis::logPosition (f); }
+    float freqFor (float x) const { return vs::axis::logHz ((x - plot.getX()) / plot.getWidth()); }
+    float yFor (float db) const { return plot.getCentreY() - plot.getHeight() * 0.5f * vs::axis::dbPosition (db, 24.0f); }
+    float dbFor (float y) const { return vs::axis::dbAt ((plot.getCentreY() - y) / (plot.getHeight() * 0.5f), 24.0f); }
 
     // Filter designs are computed once per frame, then evaluated per pixel
     struct CachedFilter { std::array<vs::BiquadCoefs, 4> c; int n = 0; };

@@ -2,18 +2,14 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PresetManager.h"
+#include "dsp/Presets.h"
 
 namespace vs
 {
-    // Built-in starting points. Anything a preset doesn't list falls back to
-    // the parameter's default; choice values are list indexes.
-    struct FactoryPreset
-    {
-        const char* name;
-        std::vector<std::pair<const char*, double>> values; // double so integer literals convert cleanly
-    };
-
-    inline void applyFactoryPreset (juce::AudioProcessor& processor, PresetManager& manager, const FactoryPreset& preset)
+    // Built-in starting points (encore-audio-processing's presets list,
+    // dsp/Presets.h). Anything a preset doesn't list falls back to the
+    // parameter's default; choice values are list indexes.
+    inline void applyFactoryPreset (juce::AudioProcessor& processor, PresetManager& manager, const presets::Preset& preset)
     {
         for (auto* param : processor.getParameters())
         {
@@ -21,9 +17,9 @@ namespace vs
             if (ranged == nullptr) continue;
 
             float value = ranged->convertFrom0to1 (ranged->getDefaultValue());
-            for (auto& [id, v] : preset.values)
-                if (ranged->paramID == id)
-                    value = (float) v;
+            for (auto& v : preset.values)
+                if (ranged->paramID == v.id)
+                    value = (float) v.value;
 
             ranged->setValueNotifyingHost (ranged->convertTo0to1 (value));
         }
@@ -34,10 +30,10 @@ namespace vs
             manager.setCurrent (preset.name, false);
     }
 
-    inline juce::StringArray factoryNames (const std::vector<FactoryPreset>& presets)
+    inline juce::StringArray factoryNames (const std::vector<presets::Preset>& list)
     {
         juce::StringArray names;
-        for (auto& p : presets) names.add (p.name);
+        for (auto& p : list) names.add (p.name);
         return names;
     }
 }

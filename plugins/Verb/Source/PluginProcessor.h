@@ -3,6 +3,8 @@
 #include "EncoreProcessorBase.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "dsp/Mix.h"
+#include "dsp/Channels.h"
 #include "dsp/Ramp.h"
 #include "dsp/ReverbEngine.h"
 #include "ui/PresetManager.h"
