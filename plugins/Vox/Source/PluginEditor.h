@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dsp/TunerPitch.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
 #include "ui/PresetBar.h"
@@ -50,7 +51,7 @@ private:
 
     float mIn = -100, mRide = 0, mDeess = 0, mComp = 0, mOut = -100;
     float shownNote = -1.0f;
-    int noteHold = 0;
+    vs::TunerFollow noteFollow { vs::noteReadout }; // the note shown, held through short gaps
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VocalSuiteEditor)
 };

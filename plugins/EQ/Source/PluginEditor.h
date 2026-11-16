@@ -48,6 +48,7 @@ private:
     juce::OwnedArray<juce::TextButton> smartChips;
     std::unique_ptr<vs::ParamToggle> smartOn;
     std::unique_ptr<vs::ParamKnob> smartFreq, smartQ, smartRange, smartThresh;
+    float shownCut[EqProcessor::numSmart] {}; // each dynamic band's cut as its meter shows it
 
     juce::Rectangle<int> bottom, carveArea, finderArea, smartArea, bandArea;
     juce::String lastPresetName;

@@ -57,7 +57,7 @@ void BodyCurveView::paint (juce::Graphics& g)
         for (int i = 0; i <= 200; ++i)
         {
             const float f = vs::axis::logHz ((float) i / 200.0f);
-            const float x = xFor (f), y = yFor (scale * curve.at (f));
+            const float x = xFor (f), y = yFor (curve.appliedDb (f, scale));
             if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
         }
         return p;
@@ -304,7 +304,7 @@ void StrumEditor::drawMeter (juce::Graphics& g, juce::Rectangle<int> r, const ju
     auto bar = r.removeFromTop (10).toFloat();
     g.setColour (theme::track);
     g.fillRoundedRectangle (bar, 3.0f);
-    const float frac = juce::jlimit (0.0f, 1.0f, (value + 60.0f) / 60.0f);
+    const float frac = vs::meters::scalePosition (value, -60.0f, 0.0f, 1.0f); // -60 .. 0 dB, straight
     g.setColour (value > -0.5f ? theme::red : theme::green);
     g.fillRoundedRectangle (bar.withWidth (bar.getWidth() * frac), 3.0f);
 }

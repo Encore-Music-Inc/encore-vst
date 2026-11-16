@@ -1,3 +1,4 @@
+#include "dsp/Denormals.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -85,7 +86,7 @@ void MasterProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void MasterProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
-    juce::ScopedNoDenormals noDenormals;
+    vs::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
     if (n == 0 || buffer.getNumChannels() < 2) return;
 

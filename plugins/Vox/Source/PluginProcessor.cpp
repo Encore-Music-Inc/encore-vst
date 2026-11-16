@@ -1,3 +1,4 @@
+#include "dsp/Denormals.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -170,7 +171,7 @@ void VocalSuiteProcessor::updateFilters()
 
 void VocalSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
-    juce::ScopedNoDenormals noDenormals;
+    vs::ScopedNoDenormals noDenormals;
 
     const int n = buffer.getNumSamples();
     const int inCh = getTotalNumInputChannels();

@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/Meters.h"
 
 namespace theme = vs::theme;
 
@@ -303,13 +304,13 @@ void EqEditor::paint (juce::Graphics& g)
         for (int s = 0; s < EqProcessor::numSmart; ++s)
         {
             const auto chip = smartChips[s]->getBounds().toFloat();
-            const float cut = proc.smartCutDb[s].load();
+            const float cut = shownCut[s];
             const float range = std::max (1.0f, proc.readSmart (s).rangeDb);
             auto bar = juce::Rectangle<float> (chip.getX() + 3.0f, chip.getBottom() + 2.0f, chip.getWidth() - 6.0f, 3.0f);
             g.setColour (theme::track);
             g.fillRect (bar);
             g.setColour (theme::red);
-            g.fillRect (bar.withWidth (bar.getWidth() * juce::jlimit (0.0f, 1.0f, cut / range)));
+            g.fillRect (bar.withWidth (bar.getWidth() * vs::meters::scalePosition (cut, 0.0f, range, 1.0f)));
         }
     }
 }
@@ -323,6 +324,8 @@ juce::String EqEditor::bandChipText (int b) const
 void EqEditor::timerCallback()
 {
     display.tick();
+    for (int s = 0; s < EqProcessor::numSmart; ++s)
+        vs::meters::step (shownCut[s], proc.smartCutDb[s].load(), vs::meters::gainReduction);
 
     for (int b = 0; b < bandChips.size(); ++b)
     {
