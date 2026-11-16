@@ -98,13 +98,8 @@ void VerbEditor::drawShape (juce::Graphics& g, juce::Rectangle<float> r)
     // decay envelope
     juce::Path tail;
     tail.startNewSubPath (toX (pre), r.getBottom());
-    tail.lineTo (toX (pre), toY (mode == 5 ? -3.0f : -6.0f));
-    const int steps = 80;
-    for (int i = 1; i <= steps; ++i)
-    {
-        const float t = decay * (float) i / (float) steps;
-        tail.lineTo (toX (pre + t), toY (-6.0f - 54.0f * t / decay));
-    }
+    for (const auto& pt : vs::ReverbEngine::decayPicture (mode, decay))
+        tail.lineTo (toX (pre + pt.t), toY (pt.db));
     tail.lineTo (toX (pre + decay), r.getBottom());
     tail.closeSubPath();
     g.setColour (theme::accent.withAlpha (0.25f));
@@ -127,7 +122,7 @@ void VerbEditor::drawShape (juce::Graphics& g, juce::Rectangle<float> r)
     // wet output meter
     g.setColour (theme::track);
     g.fillRoundedRectangle (meter, 3.0f);
-    const float frac = juce::jlimit (0.0f, 1.0f, (shownWet + 60.0f) / 60.0f);
+    const float frac = vs::meters::scalePosition (shownWet, -60.0f, 0.0f, 1.0f); // -60 .. 0 dB, straight
     g.setColour (theme::green);
     g.fillRoundedRectangle (meter.withTop (meter.getBottom() - meter.getHeight() * frac), 3.0f);
 }

@@ -2,16 +2,16 @@
 # Fails when the plugins or shared/ carry audio processing of their own.
 # All of ENCORE.'s audio processing lives in encore-audio-processing
 # (external/encore-audio-processing/dsp): filters, smoothing, oversampling,
-# FFTs, channel maps, mixing, levels, meters, the axes an editor draws on and
-# the log ranges of frequency knobs are called from there. JUCE's own
-# processing classes and buffer mixing count too, since using them would be a
-# second version of something that repository has. Copying audio unchanged
+# FFTs, channel maps, mixing, levels, meters, the denormal guard, the axes an
+# editor draws on and the log ranges of frequency knobs are called from there.
+# JUCE's own processing classes and buffer mixing count too, since using them
+# would be a second version of something that repository has. Copying audio unchanged
 # and host plumbing are not processing and are not matched.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 pattern='juce::dsp::(IIR|FIR|FFT|Oversampling|Convolution|StateVariable[A-Za-z]*|LinkwitzRiley[A-Za-z]*|Compressor|Limiter|Reverb|Gain|Panner|WindowingFunction|DelayLine|Chorus|Phaser|LadderFilter|ProcessorDuplicator|BallisticsFilter|NoiseGate|WaveShaper|Bias|DryWetMixer)\b'
-pattern+='|juce::(SmoothedValue|LinearSmoothedValue|Reverb|IIRFilter|IIRCoefficients|LagrangeInterpolator|CatmullRomInterpolator|WindowedSincInterpolator|Decibels)\b'
+pattern+='|juce::(SmoothedValue|LinearSmoothedValue|Reverb|IIRFilter|IIRCoefficients|LagrangeInterpolator|CatmullRomInterpolator|WindowedSincInterpolator|Decibels|ScopedNoDenormals)\b|disableDenormalisedNumberSupport'
 pattern+='|\.(getMagnitude|getRMSLevel|applyGainRamp)\s*\('
 # hand-written gain and mix loops (a channel's samples scaled or blended one by one)
 pattern+='|\]\[i\]\s*\*=|\]\[i\]\s*\+=\s*[a-z]+\s*\*\s*\('

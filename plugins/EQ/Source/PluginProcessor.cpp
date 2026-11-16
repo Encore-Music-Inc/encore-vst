@@ -1,3 +1,4 @@
+#include "dsp/Denormals.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -161,7 +162,7 @@ void EqProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void EqProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
-    juce::ScopedNoDenormals noDenormals;
+    vs::ScopedNoDenormals noDenormals;
 
     auto main = getBusBuffer (buffer, true, 0);
     const int n = main.getNumSamples(), nch = main.getNumChannels();

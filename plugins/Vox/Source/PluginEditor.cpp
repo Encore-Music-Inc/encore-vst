@@ -224,9 +224,8 @@ void VocalSuiteEditor::timerCallback()
     }
 
     // hold the last note briefly through gaps so the readout doesn't flicker
-    const float note = proc.detectedMidi().load();
-    if (note > 0.0f) { shownNote = note; noteHold = 10; }
-    else if (noteHold > 0 && --noteHold == 0) shownNote = -1.0f;
+    const float note = noteFollow.push (std::max (0.0f, proc.detectedMidi().load()));
+    shownNote = note > 0.0f ? note : -1.0f;
 
     // Keep section titles in sync with their on/off switch
     repaint();

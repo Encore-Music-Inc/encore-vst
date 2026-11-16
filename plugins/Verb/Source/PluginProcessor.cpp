@@ -1,3 +1,4 @@
+#include "dsp/Denormals.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -74,7 +75,7 @@ void VerbProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void VerbProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
-    juce::ScopedNoDenormals noDenormals;
+    vs::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
     const int inCh = getTotalNumInputChannels(), outCh = getTotalNumOutputChannels();
     if (n == 0 || inCh == 0) return;

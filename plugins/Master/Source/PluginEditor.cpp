@@ -199,7 +199,7 @@ void MasterEditor::drawMeters (juce::Graphics& g, juce::Rectangle<int> area)
         g.setColour (theme::track);
         g.fillRoundedRectangle (bar, 3.0f);
         g.setColour (shownGr < -6.0f ? theme::red : theme::accent);
-        g.fillRoundedRectangle (bar.withLeft (bar.getRight() - bar.getWidth() * juce::jlimit (0.0f, 1.0f, -shownGr / 12.0f)), 3.0f);
+        g.fillRoundedRectangle (bar.withLeft (bar.getRight() - bar.getWidth() * vs::meters::scalePosition (-shownGr, 0.0f, 12.0f, 1.0f)), 3.0f);
     }
 
     g.setColour (theme::dim);
