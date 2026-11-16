@@ -5,6 +5,48 @@ job puts its section on the GitHub release (see "Release notes" in
 `CLAUDE.md`). Versions before 0.5.0 were published from a different
 repository.
 
+## v0.8.0
+
+The plugins now take the last of what they worked out themselves (their
+meters, editor pictures and denormal handling) from ENCORE. Audio Processing
+v3.0.0, the same code the rest of ENCORE. uses. The reverb and Vox's harmony
+voices sound very slightly different, and your projects and presets load as
+before.
+
+### What's new
+- **EQ:** the dynamic bands' cut meters move smoothly, like Master's gain
+  reduction meter, instead of jumping.
+- **Verb, Vox's reverb send and Master's Wide and Arena styles:** the
+  reverb's slow movement is worked out more precisely, so its tails are a
+  touch different (by about a hundredth of a dB in level).
+- **Vox:** the harmony voices drift a little differently; their level is
+  about 0.16 dB lower.
+
+### Downloads
+- **Mac** (Apple Silicon and Intel, macOS 11 or newer):
+  `ENCORE-VST-0.8.0-macos.pkg` installs VST3 and Audio Units (for Logic and
+  GarageBand). It isn't signed yet: the first time, macOS says it was
+  "Not Opened". Click **Done**, go to **System Settings > Privacy & Security**,
+  click **Open Anyway**, then open the installer again. Prefer copying files
+  yourself? Use `ENCORE-VST-0.8.0-macos.zip`.
+- **Windows** (10 and 11, 64-bit): `ENCORE-VST-0.8.0-windows-setup.exe`. If
+  SmartScreen warns you, click **More info**, then **Run anyway**. Or
+  `ENCORE-VST-0.8.0-windows-x64-vst3.zip` to copy the VST3s yourself. The
+  plugins are x64: on a Windows on Arm PC, load them in your DAW's x64 version.
+- **Linux and Raspberry Pi** (Raspberry Pi OS Bookworm or newer, Debian 12 or
+  newer, Ubuntu 22.04 or newer): `ENCORE-VST-0.8.0-linux-x64.tar.gz` (PCs) and
+  `ENCORE-VST-0.8.0-linux-arm64.tar.gz` (Raspberry Pi 4 and 5, 64-bit), with
+  VST3 and LV2. Copy the `.vst3` folders to `~/.vst3` and the `.lv2` folders to
+  `~/.lv2`.
+
+Each file has a `.sha256` next to it, to check the download. After
+installing, rescan plugins in your DAW.
+
+### Built on
+ENCORE. Audio Processing v3.0.0, which brings JUCE 9.0.5.
+
+Questions or problems: support@encoremusic.studio
+
 ## v0.7.1
 
 The plugins now take their factory presets, meters, knob ranges and the
